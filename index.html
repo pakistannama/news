@@ -284,7 +284,7 @@ button{cursor:pointer}
 // ======================================================
 // DATA STORE — persists to localStorage
 // ======================================================
-const STORAGE_KEY = 'pn_db_v3';
+const STORAGE_KEY = 'pn_db_v5';
 const PASS_KEY = 'pn_pass_v3';
 
 const DEFAULT_DB = {
@@ -319,20 +319,7 @@ const DEFAULT_DB = {
     {id:4,name:'زینب علی',email:'zainab@pn.com',bio:'سیاسی تجزیہ کار'},
     {id:5,name:'بلال احمد',email:'bilal@pn.com',bio:'فنون و ثقافت'},
   ],
-  news:[
-    {id:1,title:'پاکستان اور چین کے درمیان اقتصادی تعاون میں نئے باب کا آغاز',body:'پاکستان اور چین کے درمیان ایک تاریخی معاہدے پر دستخط ہوئے جس کے تحت سی پیک منصوبے کو مزید تقویت ملے گی۔ وزیراعظم نے اس موقع پر کہا کہ یہ معاہدہ پاکستان کی ترقی میں سنگ میل ثابت ہوگا۔\n\nدونوں ممالک کے درمیان تجارتی حجم میں اضافے کی توقع ہے اور نئے صنعتی زونز قائم کیے جائیں گے۔ چینی صدر نے اس اقدام کو دونوں ملکوں کے لیے فائدہ مند قرار دیا۔\n\nیہ معاہدہ پاکستان کی معیشت کو نئی بلندیوں پر لے جائے گا اور لاکھوں نوجوانوں کو روزگار ملے گا۔',catId:1,author:1,date:'2025-04-20',featured:true,image:'',tags:'سیاست,معیشت,سی پیک',views:4521,slug:'pakistan-china-agreement',metaTitle:'پاکستان چین معاہدہ',metaDesc:'سی پیک کے تحت نیا اقتصادی معاہدہ'},
-    {id:2,title:'کراچی اسٹاک ایکسچینج نے ایک لاکھ پوائنٹس کی تاریخی بلندی چھو لی',body:'پاکستان اسٹاک مارکیٹ میں آج تاریخی تیزی دیکھی گئی اور انڈیکس پہلی مرتبہ ایک لاکھ پوائنٹس سے تجاوز کر گیا۔\n\nماہرین اقتصادیات نے اسے حکومتی پالیسیوں کا ثمر قرار دیا اور سرمایہ کاروں میں خوشی کی لہر دوڑ گئی۔ تجزیہ کاروں کے مطابق یہ اضافہ معیشت میں استحکام کی علامت ہے۔',catId:3,author:1,date:'2025-04-19',featured:true,image:'',tags:'مالیات,بازار',views:3210,slug:'karachi-stock-market-record',metaTitle:'اسٹاک مارکیٹ',metaDesc:'کراچی بازار سرمایہ میں ریکارڈ اضافہ'},
-    {id:3,title:'قومی کرکٹ ٹیم نے آسٹریلیا کو ہرا کر تاریخی سیریز جیت لی',body:'قومی کرکٹ ٹیم نے میزبان آسٹریلیا کو تین میچوں کی سیریز میں شکست دے کر تاریخ رقم کی۔\n\nبابر اعظم کی عمدہ کپتانی اور شاہین آفریدی کی شاندار باؤلنگ سیریز جیتنے کا سبب بنی۔ پوری قوم نے اس فتح پر ٹیم کو مبارکباد دی اور سوشل میڈیا پر مبارکباد کا سلسلہ جاری ہے۔',catId:4,author:3,date:'2025-04-18',featured:false,image:'',tags:'کرکٹ,آسٹریلیا',views:8900,slug:'pakistan-cricket-series-win',metaTitle:'کرکٹ سیریز',metaDesc:'پاکستان نے آسٹریلیا کو ہرا دیا'},
-    {id:4,title:'لاہور میں آرٹیفیشل انٹیلیجنس کانفرنس کا شاندار انعقاد',body:'لاہور کے طلباء نے ایک ایسا اے آئی پروگرام تیار کیا ہے جو اردو زبان کو خودکار طریقے سے سمجھ سکتا ہے۔\n\nیہ اختراع پاکستان میں ڈیجیٹل انقلاب کا پیش خیمہ بن سکتی ہے۔ ماہرین نے اسے ایک اہم سنگ میل قرار دیا۔',catId:5,author:2,date:'2025-04-17',featured:false,image:'',tags:'اے آئی,تعلیم',views:5600,slug:'lahore-ai-conference',metaTitle:'اردو اے آئی',metaDesc:'پاکستانی طلباء کی اختراع'},
-    {id:5,title:'لاہور میں بین الاقوامی فلم فیسٹیول — فن و فنکار کا جشن',body:'لاہور میں پہلی مرتبہ بین الاقوامی فلم فیسٹیول کا انعقاد کیا گیا جس میں دنیا بھر سے فنکاروں نے شرکت کی۔\n\nاس موقع پر پاکستانی فلم انڈسٹری کی شاندار کارکردگی کو سراہا گیا۔',catId:11,author:5,date:'2025-04-16',featured:false,image:'',tags:'فلم,لاہور',views:2340,slug:'lahore-film-festival',metaTitle:'فلم فیسٹیول',metaDesc:'لاہور بین الاقوامی فلم فیسٹیول'},
-    {id:6,title:'اقوام متحدہ کا فلسطین کے حق میں تاریخی فیصلہ',body:'اقوام متحدہ کی جنرل اسمبلی نے فلسطین کے حق میں ایک تاریخی قرارداد منظور کی جس میں فوری جنگ بندی کا مطالبہ کیا گیا۔\n\nپاکستان نے قرارداد کی بھرپور حمایت کی اور سفارت کار نے پرجوش تقریر کی۔',catId:2,author:2,date:'2025-04-15',featured:true,image:'',tags:'فلسطین,اقوام متحدہ',views:12000,slug:'un-palestine-resolution',metaTitle:'فلسطین قرارداد',metaDesc:'اقوام متحدہ میں فلسطین کی حمایت'},
-    {id:7,title:'سینیٹ میں اپوزیشن کا شدید احتجاج — سیاسی بحران گہرا ہوا',body:'سینیٹ کے اجلاس میں اپوزیشن جماعتوں نے حکومتی پالیسیوں کے خلاف شدید احتجاج کیا۔\n\nایوان میں تلخ کلامی کے مناظر دیکھے گئے اور اجلاس کچھ دیر کے لیے ملتوی کرنا پڑا۔',catId:7,author:4,date:'2025-04-14',featured:false,image:'',tags:'سیاست,سینیٹ',views:6700,slug:'senate-opposition-protest',metaTitle:'سینیٹ احتجاج',metaDesc:'اپوزیشن کا سینیٹ میں احتجاج'},
-    {id:8,title:'میرا کالم: پاکستان کی تعلیمی نظام میں تبدیلی کی ضرورت',body:'آج کے دور میں پاکستان کی تعلیمی نظام میں بنیادی اصلاحات کی ضرورت ہے۔ ہمارے بچوں کو جدید دور کے تقاضوں کے مطابق تعلیم دینا ہوگی۔\n\nڈیجیٹل تعلیم کو فروغ دینا وقت کی اہم ضرورت ہے۔ حکومت کو اس شعبے میں سرمایہ کاری بڑھانی چاہیے۔',catId:8,author:4,date:'2025-04-13',featured:false,image:'',tags:'تعلیم,کالم',views:3400,slug:'column-education-reform',metaTitle:'تعلیمی اصلاح کالم',metaDesc:'تعلیمی نظام پر کالم'},
-    {id:9,title:'میرا پاکستان: وطن سے محبت کی نئی داستان',body:'پاکستان ہمارا گھر ہے اور اسے خوبصورت بنانا ہماری ذمہ داری ہے۔ ہر پاکستانی کو اپنے ملک کی ترقی میں حصہ ڈالنا چاہیے۔\n\nنوجوان نسل کو ملک کی خدمت کے لیے آگے آنا ہوگا۔',catId:9,author:1,date:'2025-04-12',featured:false,image:'',tags:'پاکستان,وطن',views:4100,slug:'mera-pakistan-love',metaTitle:'میرا پاکستان',metaDesc:'وطن سے محبت'},
-    {id:10,title:'بھارت میں انتخابات کے نتائج — مودی حکومت کا مستقبل',body:'بھارتی عام انتخابات کے نتائج نے پوری دنیا کی توجہ حاصل کی۔\n\nبی جے پی کو متوقع اکثریت نہ مل سکی اور اتحادی حکومت بنانے کی کوششیں شروع ہو گئیں۔ پاکستان نے بھی ان نتائج پر گہری نظر رکھی۔',catId:10,author:2,date:'2025-04-11',featured:false,image:'',tags:'بھارت,انتخابات',views:9800,slug:'india-elections-results',metaTitle:'بھارتی انتخابات',metaDesc:'بھارت انتخابات 2024'},
-    {id:11,title:'فن و فنکار: عالمی شہرت یافتہ پاکستانی گلوکار کی واپسی',body:'پاکستان کے مشہور گلوکار نے کئی سال بعد ایک نئی البم پیش کی جس نے دنیا بھر میں دھوم مچا دی۔\n\nان کی آواز اور موسیقی نے ایک بار پھر پاکستانی فن کا لوہا منوایا۔',catId:11,author:5,date:'2025-04-10',featured:false,image:'',tags:'موسیقی,فن',views:5500,slug:'pakistani-singer-return',metaTitle:'پاکستانی گلوکار',metaDesc:'فن اور فنکار'},
-    {id:12,title:'وزیراعظم کا ملک بھر میں سولر انرجی پراجیکٹ کا اعلان',body:'وزیراعظم نے ایک ارب ڈالر کے سولر انرجی پراجیکٹ کا اعلان کیا جو اگلے پانچ برسوں میں ملک بھر میں توانائی کا بحران ختم کرے گا۔\n\nیہ پراجیکٹ صوبوں کے تعاون سے شروع کیا جائے گا اور لاکھوں گھروں کو بجلی ملے گی۔',catId:1,author:1,date:'2025-04-09',featured:false,image:'',tags:'توانائی,سولر',views:6700,slug:'pm-solar-energy-project',metaTitle:'سولر پراجیکٹ',metaDesc:'پاکستان سولر انرجی'},
-  ],
+  news:[],
   breaking:[
     'وزیراعظم کی زیرصدارت اہم اجلاس | سی پیک منصوبوں کا جائزہ',
     'قومی کرکٹ ٹیم نے آسٹریلیا کو سیریز میں شکست دے دی',
@@ -1116,8 +1103,16 @@ function rSettAdm(){
 <div class="fg"><label>فوٹر متن (اردو)</label><input class="fc" dir="rtl" id="sf" value="${esc(s.footerText)}"></div>
 <div class="fg"><label>بریکنگ نیوز (ہر سطر ایک خبر)</label>
 <textarea class="fc" dir="rtl" id="sb" rows="6" style="font-family:var(--fu);font-size:14px;line-height:1.8">${DB.breaking.map(b=>esc(b)).join('\n')}</textarea></div>
-<div class="fa"><button class="btn-p" onclick="saveSett()">💾 ترتیبات محفوظ کریں</button></div>
+<div class="fa"><button class="btn-p" onclick="saveSett()">💾 ترتیبات محفوظ کریں</button><button class="btn-sec" onclick="clearAllCache()" style="background:#c0392b">🗑 سب کا Cache صاف کریں</button></div>
 </div>`;
+}
+
+window.clearAllCache=()=>{
+  if(confirm('کیا آپ یقیناً تمام localStorage data حذف کرنا چاہتے ہیں؟\nیہ عمل واپس نہیں ہو سکتا۔')){
+    localStorage.clear();
+    toast('Cache صاف ہو گیا — صفحہ دوبارہ لوڈ ہو رہا ہے...',2000);
+    setTimeout(()=>location.reload(),2000);
+  }
 }
 
 function rRatesAdm(){
@@ -1416,20 +1411,8 @@ window.uploadToCloudinary = async function(input){
 function buildShareLink(n){
   if(!n) return location.href.split('#')[0];
   const base=location.href.split('#')[0].split('?')[0];
-  const data={
-    id:n.id,title:n.title,body:n.body,catId:n.catId,author:n.author,
-    date:n.date,featured:n.featured,image:n.image||'',tags:n.tags||'',
-    slug:n.slug,views:n.views,metaTitle:n.metaTitle||'',metaDesc:n.metaDesc||''
-  };
-  try{
-    // Encode full article data into URL as base64
-    const json=JSON.stringify(data);
-    const b64=btoa(unescape(encodeURIComponent(json)));
-    // Use real query string (before #) so browser keeps it on reload
-    return base+'?nd='+b64+'#/news/'+n.slug;
-  }catch(e){
-    return base+'#/news/'+n.slug;
-  }
+  // Simple clean link — only slug, no base64 data
+  return base+'#/news/'+n.slug;
 }
 
 // ======================================================
@@ -1437,22 +1420,6 @@ function buildShareLink(n){
 // ======================================================
 function handleRoute(){
   const hash=location.hash;
-
-  // Extract ?nd= from full href — works with both file:// and https://
-  const fullUrl=location.href;
-  const ndMatch=fullUrl.match(/[?&]nd=([^&#]+)/);
-  const ndParam=ndMatch?ndMatch[1]:null;
-
-  if(ndParam){
-    try{
-      const decoded=JSON.parse(decodeURIComponent(escape(atob(ndParam))));
-      if(decoded&&decoded.slug){
-        if(!DB.news.find(x=>x.slug===decoded.slug)) DB.news.push(decoded);
-        const found=DB.news.find(x=>x.slug===decoded.slug);
-        if(found){S.viewN=found.id;S.catF=null;S.staticPg=null;return;}
-      }
-    }catch(e){}
-  }
 
   if(!hash||hash==='#/'||hash==='#'){S.viewN=null;S.catF=null;S.staticPg=null;return}
 
