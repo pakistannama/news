@@ -284,7 +284,7 @@ button{cursor:pointer}
 // ======================================================
 // DATA STORE — persists to localStorage
 // ======================================================
-const STORAGE_KEY = 'pn_db_v5';
+const STORAGE_KEY = 'pn_db_v6';
 const PASS_KEY = 'pn_pass_v3';
 
 const DEFAULT_DB = {
@@ -736,7 +736,7 @@ ${n.image?`<img src="${escUrl(n.image)}" alt="${esc(n.title)}">`:`<span style="f
 <button class="sh-btn" style="background:#1877f2" onclick="window.open('${fbShare}','_blank','width=600,height=400')">📘 Facebook</button>
 <button class="sh-btn" style="background:#25d366" onclick="window.open('${waShare}','_blank')">📱 WhatsApp</button>
 <button class="sh-btn" style="background:#1da1f2" onclick="window.open('${twShare}','_blank','width=600,height=400')">🐦 Twitter/X</button>
-<button class="sh-btn" style="background:var(--gd)" onclick="navigator.clipboard&&navigator.clipboard.writeText(buildShareLink(DB.news.find(x=>x.id===S.viewN))).then(()=>toast('لنک کاپی ہو گیا ✓'))">🔗 لنک کاپی</button>
+<button class="sh-btn" style="background:var(--gd)" onclick="copyShareLink(${n.id})">🔗 لنک کاپی</button>
 </div>
 </div>
 ${related.length?`<div style="margin-top:22px">
@@ -1103,14 +1103,13 @@ function rSettAdm(){
 <div class="fg"><label>فوٹر متن (اردو)</label><input class="fc" dir="rtl" id="sf" value="${esc(s.footerText)}"></div>
 <div class="fg"><label>بریکنگ نیوز (ہر سطر ایک خبر)</label>
 <textarea class="fc" dir="rtl" id="sb" rows="6" style="font-family:var(--fu);font-size:14px;line-height:1.8">${DB.breaking.map(b=>esc(b)).join('\n')}</textarea></div>
-<div class="fa"><button class="btn-p" onclick="saveSett()">💾 ترتیبات محفوظ کریں</button><button class="btn-sec" onclick="clearAllCache()" style="background:#c0392b">🗑 سب کا Cache صاف کریں</button></div>
+<div class="fa"><button class="btn-p" onclick="saveSett()">💾 ترتیبات محفوظ کریں</button><button class="btn-sec" onclick="clearSiteCache()" style="background:#c0392b;margin-right:8px">🗑 Cache صاف کریں</button></div>
 </div>`;
 }
 
-window.clearAllCache=()=>{
-  if(confirm('کیا آپ یقیناً تمام localStorage data حذف کرنا چاہتے ہیں؟\nیہ عمل واپس نہیں ہو سکتا۔')){
-    localStorage.clear();
-    toast('Cache صاف ہو گیا — صفحہ دوبارہ لوڈ ہو رہا ہے...',2000);
+window.clearSiteCache=()=>{
+  if(confirm('تمام localStorage data حذف ہوگا۔\nویب سائٹ نئے سرے سے لوڈ ہوگی۔\nیقین ہے؟')){
+    localStorage.clear();toast('صاف ہو گیا — دوبارہ لوڈ ہو رہا ہے...',2000);
     setTimeout(()=>location.reload(),2000);
   }
 }
@@ -1411,8 +1410,18 @@ window.uploadToCloudinary = async function(input){
 function buildShareLink(n){
   if(!n) return location.href.split('#')[0];
   const base=location.href.split('#')[0].split('?')[0];
-  // Simple clean link — only slug, no base64 data
-  return base+'#/news/'+n.slug;
+  // Embed essential article data so link works on any browser/device
+  const data={
+    id:n.id,title:n.title,body:n.body,catId:n.catId,author:n.author,
+    date:n.date,featured:n.featured,image:n.image||'',tags:n.tags||'',
+    slug:n.slug,views:n.views,metaTitle:n.metaTitle||'',metaDesc:n.metaDesc||''
+  };
+  try{
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    return base+'?nd='+b64+'#/news/'+n.slug;
+  }catch(e){
+    return base+'#/news/'+n.slug;
+  }
 }
 
 // ======================================================
@@ -1421,26 +1430,64 @@ function buildShareLink(n){
 function handleRoute(){
   const hash=location.hash;
 
+  // Extract ?nd= article data from URL — saves it to DB so link works anywhere
+  const ndMatch=location.href.match(/[?&]nd=([^&#]+)/);
+  if(ndMatch){
+    try{
+      const decoded=JSON.parse(decodeURIComponent(escape(atob(ndMatch[1]))));
+      if(decoded&&decoded.slug){
+        // Save into DB if not already there (so future visits work too)
+        if(!DB.news.find(x=>x.slug===decoded.slug)){
+          DB.news.unshift(decoded);
+          saveDB();
+        }
+        const found=DB.news.find(x=>x.slug===decoded.slug);
+        if(found){S.viewN=found.id;S.catF=null;S.staticPg=null;return;}
+      }
+    }catch(e){}
+  }
+
   if(!hash||hash==='#/'||hash==='#'){S.viewN=null;S.catF=null;S.staticPg=null;return}
 
-  // /news/slug
+  // #/news/slug
   const newsMatch=hash.match(/^#\/news\/([^?&#]+)/);
   if(newsMatch){
-    const slug=newsMatch[1];
+    const slug=decodeURIComponent(newsMatch[1]);
     const n=DB.news.find(x=>x.slug===slug);
     if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;}
     return;
   }
-  // /cat/slug
+  // #/cat/slug
   const catMatch=hash.match(/^#\/cat\/(.+)$/);
   if(catMatch){
     const c=DB.categories.find(x=>x.slug===catMatch[1]);
     if(c){S.catF=c.id;S.viewN=null;S.staticPg=null;}
     return;
   }
-  // /page/name
+  // #/page/name
   const pgMatch=hash.match(/^#\/page\/(.+)$/);
   if(pgMatch){S.staticPg=pgMatch[1];S.viewN=null;S.catF=null;}
+}
+
+// ======================================================
+// COPY SHARE LINK — works on all browsers including mobile
+// ======================================================
+window.copyShareLink=function(id){
+  const n=DB.news.find(x=>x.id===id);
+  if(!n)return;
+  const link=buildShareLink(n);
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(link).then(()=>toast('لنک کاپی ہو گیا ✓ — کہیں بھی paste کریں')).catch(()=>fallbackCopy(link));
+  }else{
+    fallbackCopy(link);
+  }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');toast('لنک کاپی ہو گیا ✓');}catch(e){toast('لنک: '+text,6000);}
+  document.body.removeChild(ta);
 }
 
 window.addEventListener('hashchange',()=>{handleRoute();render();window.scrollTo(0,0)});
