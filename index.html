@@ -11,6 +11,72 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAQuxBz9ewCCib0XZNNp3TCAg8wce49GIw",
+  authDomain: "pakistan-namaa.firebaseapp.com",
+  projectId: "pakistan-namaa",
+  storageBucket: "pakistan-namaa.firebasestorage.app",
+  messagingSenderId: "449872920397",
+  appId: "1:449872920397:web:9ba8cd0c1a6d1020468104",
+  measurementId: "G-XZENCR5CWY"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ---- Expose Firebase functions globally ----
+window._fb = { db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, onSnapshot, signInWithEmailAndPassword, onAuthStateChanged, signOut };
+
+// ---- Auth state listener ----
+onAuthStateChanged(auth, (user) => {
+  window._fbUser = user || null;
+});
+
+// ---- Load news from Firestore on startup ----
+async function loadNewsFromFirestore() {
+  try {
+    const q = query(collection(db, 'news'), orderBy('date', 'desc'));
+    const snap = await getDocs(q);
+    const fbNews = [];
+    snap.forEach(d => fbNews.push({...d.data(), _fbId: d.id}));
+    if (fbNews.length > 0) {
+      // Map Firestore data to local DB format
+      window._fbNewsLoaded = fbNews;
+      // Merge into DB — Firestore is source of truth for news
+      DB.news = fbNews.map(n => ({
+        id: n.id || n._fbId,
+        title: n.title || '',
+        body: n.body || '',
+        catId: n.catId || 1,
+        author: n.author || 1,
+        date: n.date || new Date().toISOString().split('T')[0],
+        featured: n.featured || false,
+        image: n.image || '',
+        tags: n.tags || '',
+        slug: n.slug || '',
+        views: n.views || 0,
+        metaTitle: n.metaTitle || '',
+        metaDesc: n.metaDesc || '',
+        _fbId: n._fbId
+      }));
+      S.nid = DB.news.reduce((mx,n)=>Math.max(mx, typeof n.id === 'number' ? n.id : 0), 0) + 1;
+      render();
+    }
+  } catch(e) {
+    console.log('Firestore load error:', e);
+  }
+}
+
+// Run after page loads
+window.addEventListener('_appReady', loadNewsFromFirestore);
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -28,6 +94,8 @@ body{font-family:var(--fu);direction:rtl;background:var(--bg);color:var(--tp);fo
 .hide{display:none!important}
 a{text-decoration:none;color:inherit}
 button{cursor:pointer}
+
+/* ===== HEADER ===== */
 .hdr{background:linear-gradient(160deg,#041a08 0%,var(--gd) 45%,#0c3a16 100%);color:#fff;position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;position:relative}
@@ -36,8 +104,12 @@ button{cursor:pointer}
 .logo-underline{width:80px;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto}
 .hdr-left{min-width:200px;display:flex;align-items:center}
 .hdr-right{min-width:200px;display:flex;align-items:center;justify-content:flex-end}
+.chief-editor{font-family:var(--fi);font-size:12px;color:var(--goldl);background:rgba(255,255,255,0.08);padding:6px 14px;border-radius:20px;border:1px solid rgba(201,168,76,0.3)}
+.chief-editor strong{display:block;font-size:13px;color:#fff}
 .date-bar{background:rgba(0,0,0,0.3);padding:5px 22px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,0.75);font-family:var(--fi);border-top:1px solid rgba(255,255,255,0.08)}
 .date-bar .pst{direction:ltr;font-size:11px;color:rgba(255,255,255,0.5)}
+
+/* ===== BREAKING NEWS ===== */
 .brk{background:linear-gradient(90deg,#8b0000,#c0392b,#8b0000);color:#fff;display:flex;align-items:center;height:40px;overflow:hidden;border-bottom:2px solid #7f0000}
 .brk-lbl{background:#5a0000;padding:0 20px;height:100%;display:flex;align-items:center;font-size:13px;font-weight:700;white-space:nowrap;font-family:var(--fi);gap:7px;min-width:120px;letter-spacing:.5px;flex-shrink:0;border-left:3px solid var(--gold)}
 .brk-dot{width:8px;height:8px;background:#ff4444;border-radius:50%;animation:pulse 1.2s infinite}
@@ -48,21 +120,31 @@ button{cursor:pointer}
 .brk-sep{color:var(--goldl);font-size:11px;padding:0 18px;opacity:.8}
 @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .brk-item{padding:0 20px;font-size:14px;font-family:var(--fu)}
+
+/* ===== NAV ===== */
 .nav{background:var(--gm);position:sticky;top:0;z-index:200;box-shadow:0 3px 12px rgba(0,0,0,0.25)}
 .nav-inner{display:flex;align-items:center;max-width:1240px;margin:0 auto;padding:0 12px;overflow-x:auto}
 .nav-inner::-webkit-scrollbar{height:2px}.nav-inner::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.3)}
 .nav-inner a{display:block;padding:11px 15px;color:rgba(255,255,255,.85);font-size:14px;font-family:var(--fu);border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;cursor:pointer}
 .nav-inner a:hover,.nav-inner a.act{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.1)}
+
+/* ===== LAYOUT ===== */
 .wrap{max-width:1240px;margin:0 auto;padding:20px 16px;width:100%}
 .grid{display:grid;grid-template-columns:1fr 310px;gap:24px}
+
+/* ===== SEARCH ===== */
 .srch-bar{display:flex;gap:8px;margin-bottom:20px;background:var(--card);padding:12px 16px;border-radius:var(--rl);box-shadow:var(--sh)}
 .srch-bar input{flex:1;padding:9px 14px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--fu);font-size:15px;outline:none;transition:border-color .2s}
 .srch-bar input:focus{border-color:var(--gm)}
 .srch-bar button{background:var(--gm);color:#fff;border:none;padding:9px 20px;border-radius:var(--r);font-size:14px;font-family:var(--fi);transition:background .2s}
 .srch-bar button:hover{background:var(--gd)}
+
+/* ===== SECTION TITLES ===== */
 .sec-ttl{font-size:19px;font-weight:700;color:var(--gd);border-right:4px solid var(--gl);padding-right:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;font-family:var(--fu)}
 .sec-ttl a{font-size:12px;color:var(--gm);font-weight:400;font-family:var(--fi);cursor:pointer}
 .sec-ttl a:hover{color:var(--gd)}
+
+/* ===== NEWS CARDS ===== */
 .feat-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:28px}
 .feat-side{display:flex;flex-direction:column;gap:14px}
 .ncard{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative}
@@ -76,6 +158,8 @@ button{cursor:pointer}
 .ncard-ttl{font-family:var(--fu);font-weight:600;line-height:1.65;color:var(--tp);margin-bottom:6px}
 .ncard-meta{font-size:11px;color:var(--tm);font-family:var(--fi);direction:ltr;text-align:right;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .views-badge{background:#f0f0f0;padding:1px 7px;border-radius:10px;font-size:10px}
+
+/* ===== LIST ITEMS ===== */
 .nlist{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
 .nli{display:flex;gap:12px;background:var(--card);border-radius:var(--r);padding:12px;box-shadow:0 1px 5px rgba(0,0,0,.05);cursor:pointer;transition:box-shadow .2s,transform .2s}
 .nli:hover{box-shadow:var(--sh);transform:translateX(-2px)}
@@ -84,6 +168,8 @@ button{cursor:pointer}
 .nli-body{flex:1;min-width:0}
 .nli-ttl{font-family:var(--fu);font-size:15px;font-weight:600;line-height:1.55;margin-bottom:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .nli-meta{font-size:11px;color:var(--tm);font-family:var(--fi);direction:ltr;text-align:right}
+
+/* ===== SIDEBAR ===== */
 .sb{display:flex;flex-direction:column;gap:18px}
 .sw{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .sw-ttl{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:10px 15px;font-size:14px;font-family:var(--fu);font-weight:600;display:flex;align-items:center;gap:6px}
@@ -93,6 +179,8 @@ button{cursor:pointer}
 .pop-item:hover{background:#fafff9}
 .pop-n{background:var(--gl);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--fi);flex-shrink:0;font-weight:700;margin-top:2px}
 .pop-tx{font-family:var(--fu);font-size:13px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ===== PRAYER TIMES WIDGET ===== */
 .prayer-w{background:linear-gradient(145deg,#0d3b6e,#1a5c8a);color:#fff;border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .prayer-hdr{padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between}
 .prayer-hdr h4{font-family:var(--fu);font-size:14px}
@@ -103,6 +191,9 @@ button{cursor:pointer}
 .pt-cell.active{background:rgba(201,168,76,.35);border:1px solid rgba(201,168,76,.5)}
 .pt-name{font-family:var(--fu);font-size:12px;opacity:.85}
 .pt-time{font-family:var(--fi);font-size:14px;font-weight:700;margin-top:3px;direction:ltr}
+.prayer-loading{text-align:center;padding:20px;font-family:var(--fi);font-size:12px;opacity:.7}
+
+/* ===== GOLD & CURRENCY WIDGET ===== */
 .rates-w{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .rate-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-family:var(--fi)}
 .rate-item:last-child{border:none}
@@ -116,6 +207,8 @@ button{cursor:pointer}
 .gold-bar .lbl{font-family:var(--fu);font-size:13px}
 .gold-bar .val{font-family:var(--fi);font-size:16px;font-weight:700;direction:ltr}
 .rates-update{font-family:var(--fi);font-size:10px;color:var(--tm);text-align:center;padding:4px 0;margin-top:4px}
+
+/* ===== ARTICLE PAGE ===== */
 .art-wrap{background:var(--card);border-radius:var(--rl);padding:24px;box-shadow:var(--sh);margin-bottom:20px}
 .art-wrap h1{font-family:var(--fu);font-size:26px;font-weight:700;line-height:1.75;margin-bottom:14px;color:var(--tp)}
 .art-hero{width:100%;border-radius:var(--r);margin-bottom:18px;overflow:hidden;max-height:400px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
@@ -128,13 +221,19 @@ button{cursor:pointer}
 .sh-btn:hover{opacity:.85}
 .back-btn{background:var(--gd);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-family:var(--fi);font-size:13px;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;transition:background .2s}
 .back-btn:hover{background:var(--gm)}
+
+/* ===== CATEGORY PAGE ===== */
 .cat-hdr{color:#fff;padding:20px;border-radius:var(--rl);margin-bottom:20px;display:flex;align-items:center;gap:16px}
 .cat-hdr .cat-icon{font-size:32px}
 .cat-hdr h2{font-family:var(--fu);font-size:24px;margin-bottom:3px}
 .cat-hdr p{font-family:var(--fi);font-size:13px;opacity:.8}
+
+/* ===== PAGINATION ===== */
 .pg{display:flex;justify-content:center;gap:8px;margin:20px 0}
 .pg-btn{padding:7px 16px;border:1.5px solid var(--bdr);border-radius:var(--r);cursor:pointer;background:#fff;font-size:13px;font-family:var(--fi);transition:all .2s}
 .pg-btn.on,.pg-btn:hover{background:var(--gm);color:#fff;border-color:var(--gm)}
+
+/* ===== FOOTER ===== */
 .ftr{background:linear-gradient(160deg,#041408,var(--gd));color:rgba(255,255,255,.8);padding:32px 20px 16px;margin-top:auto}
 .ftr-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;max-width:1240px;margin:0 auto 22px}
 .ftr-col h4{color:var(--goldl);font-family:var(--fu);font-size:15px;margin-bottom:12px;font-weight:600;display:flex;align-items:center;gap:8px}
@@ -150,6 +249,8 @@ button{cursor:pointer}
 .soc-btn:hover{opacity:.85}
 .ftr-btm{text-align:center;border-top:1px solid rgba(255,255,255,.1);padding-top:16px;font-size:12px;color:rgba(255,255,255,.4);direction:ltr;font-family:var(--fi)}
 .ftr-addr{margin-top:10px;font-family:var(--fi);font-size:12px;color:rgba(255,255,255,.5);line-height:1.9}
+
+/* ===== STATIC PAGES ===== */
 .page-wrap{background:var(--card);border-radius:var(--rl);padding:28px;box-shadow:var(--sh);max-width:800px}
 .page-wrap h1{font-family:var(--fu);font-size:26px;color:var(--gd);margin-bottom:6px}
 .page-divider{height:3px;background:linear-gradient(90deg,var(--gold),transparent);border:none;margin:14px 0 20px}
@@ -163,6 +264,8 @@ button{cursor:pointer}
 .cf-field input:focus,.cf-field textarea:focus{border-color:var(--gm)}
 .cf-submit{background:var(--gm);color:#fff;border:none;padding:11px 28px;border-radius:var(--r);font-family:var(--fu);font-size:15px;cursor:pointer;transition:background .2s;margin-top:4px}
 .cf-submit:hover{background:var(--gd)}
+
+/* ===== ADMIN PANEL ===== */
 .adm-ov{position:fixed;inset:0;background:#eef0ee;z-index:1000;display:flex;flex-direction:column;direction:ltr;font-family:var(--fi);overflow:hidden}
 .adm-hdr{background:var(--gd);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .adm-hdr h2{font-size:17px;font-weight:600;font-family:var(--fu);direction:rtl;display:flex;align-items:center;gap:10px}
@@ -202,12 +305,18 @@ button{cursor:pointer}
 .fc[dir=rtl]{font-family:var(--fu);font-size:15px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:15px}
 .fa{display:flex;gap:10px;margin-top:20px}
+
+/* ===== LOGIN ===== */
 .login-sc{position:fixed;inset:0;background:linear-gradient(145deg,#041408,var(--gd),#0d5c20);display:flex;align-items:center;justify-content:center;z-index:2000}
 .login-card{background:#fff;border-radius:var(--rl);padding:42px;width:360px;box-shadow:0 24px 70px rgba(0,0,0,.35);direction:ltr}
 .login-logo{text-align:center;margin-bottom:6px;font-family:var(--fu);direction:rtl;font-size:28px;color:var(--gd);font-weight:700}
 .login-sub{text-align:center;font-size:12px;color:var(--tm);margin-bottom:24px;font-family:var(--fi)}
+
+/* ===== TOAST ===== */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--gd);color:#fff;padding:12px 26px;border-radius:var(--rl);font-family:var(--fi);font-size:13px;z-index:9999;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateX(-50%) translateY(12px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== RESPONSIVE ===== */
 @media(max-width:900px){
   .grid{grid-template-columns:1fr}
   .feat-grid{grid-template-columns:1fr}
@@ -238,10 +347,24 @@ button{cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY='pn_db_v6';
-const PASS_KEY='pn_pass_v3';
-const DEFAULT_DB={
-  settings:{siteName:'پاکستان نامہ',chiefEditor:'محمد واجد عزیز',logo:'',footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',adsenseId:'',fbUrl:'https://facebook.com/pakistannamaa',twUrl:'https://twitter.com/pakistannamaa',waUrl:'https://wa.me/923001234567',igUrl:'https://instagram.com/pakistannamaa'},
+// ======================================================
+// DATA STORE — persists to localStorage
+// ======================================================
+const STORAGE_KEY = 'pn_db_v6';
+const PASS_KEY = 'pn_pass_v3';
+
+const DEFAULT_DB = {
+  settings:{
+    siteName:'پاکستان نامہ',
+    chiefEditor:'محمد واجد عزیز',
+    logo:'',
+    footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
+    adsenseId:'',
+    fbUrl:'https://facebook.com/pakistannamaa',
+    twUrl:'https://twitter.com/pakistannamaa',
+    waUrl:'https://wa.me/923001234567',
+    igUrl:'https://instagram.com/pakistannamaa',
+  },
   categories:[
     {id:1,name:'پاکستان',slug:'pakistan',color:'#2db844',icon:'🇵🇰'},
     {id:2,name:'عالمی',slug:'world',color:'#2196f3',icon:'🌍'},
@@ -263,36 +386,67 @@ const DEFAULT_DB={
     {id:5,name:'بلال احمد',email:'bilal@pn.com',bio:'فنون و ثقافت'},
   ],
   news:[],
-  breaking:['وزیراعظم کی زیرصدارت اہم اجلاس | سی پیک منصوبوں کا جائزہ','قومی کرکٹ ٹیم نے آسٹریلیا کو سیریز میں شکست دے دی','اسٹاک مارکیٹ ریکارڈ بلندی پر | انڈیکس ایک لاکھ پوائنٹس سے تجاوز','بھارتی انتخابات: مودی حکومت کے لیے نئے چیلنجز','اقوام متحدہ کا فلسطین کے حق میں تاریخی قرارداد منظور'],
-  rates:{gold24k:247800,usd:278.5,eur:302.3,sar:74.2,aed:75.8,gbp:352.1,lastUpdated:'2025-04-20 10:00'},
-  prayer:{fajr:'4:32',zuhr:'12:18',asr:'4:05',maghrib:'7:42',isha:'9:10',city:'لاہور',lastUpdated:new Date().toDateString()}
+  breaking:[
+    'وزیراعظم کی زیرصدارت اہم اجلاس | سی پیک منصوبوں کا جائزہ',
+    'قومی کرکٹ ٹیم نے آسٹریلیا کو سیریز میں شکست دے دی',
+    'اسٹاک مارکیٹ ریکارڈ بلندی پر | انڈیکس ایک لاکھ پوائنٹس سے تجاوز',
+    'بھارتی انتخابات: مودی حکومت کے لیے نئے چیلنجز',
+    'اقوام متحدہ کا فلسطین کے حق میں تاریخی قرارداد منظور',
+  ],
+  rates:{
+    gold24k:247800,
+    usd:278.5,
+    eur:302.3,
+    sar:74.2,
+    aed:75.8,
+    gbp:352.1,
+    lastUpdated:'2025-04-20 10:00'
+  },
+  prayer:{
+    fajr:'4:32',zuhr:'12:18',asr:'4:05',maghrib:'7:42',isha:'9:10',
+    city:'لاہور',lastUpdated:new Date().toDateString()
+  }
 };
 
+// ======================================================
+// PERSISTENCE
+// ======================================================
 function loadDB(){
   try{
     const saved=localStorage.getItem(STORAGE_KEY);
     if(saved){
       const parsed=JSON.parse(saved);
+      // Merge to ensure new keys are present
       return {...DEFAULT_DB,...parsed,settings:{...DEFAULT_DB.settings,...parsed.settings},rates:{...DEFAULT_DB.rates,...parsed.rates},prayer:{...DEFAULT_DB.prayer,...parsed.prayer}};
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_DB));
 }
-function saveDB(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){}}
+function saveDB(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){}
+}
 function loadPass(){return 'PAKistan11$';}
 function savePass(p){}
 
 let DB=loadDB();
 let PASS=loadPass();
 
+// ======================================================
+// STATE
+// ======================================================
 let S={
-  page:'home',adm:false,admPg:'dashboard',admIn:false,
+  page:'home',
+  adm:false,admPg:'dashboard',admIn:false,
   editN:null,editC:null,editA:null,
   viewN:null,catF:null,srch:'',staticPg:null,
   nid:DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1,
-  artPage:1,catPage:1,prayerLoading:false
+  artPage:1,catPage:1,
+  prayerLoading:false
 };
 
+// ======================================================
+// UTILS
+// ======================================================
 function toast(m,dur=3000){
   const t=document.getElementById('toast');
   t.textContent=m;t.classList.add('show');
@@ -302,30 +456,17 @@ function getCat(id){return DB.categories.find(c=>c.id==id)||{name:'',color:'#888
 function getAuth(id){return DB.authors.find(a=>a.id==id)||{name:'نامعلوم'}}
 function fmtDate(d){try{return new Date(d).toLocaleDateString('ur-PK',{year:'numeric',month:'long',day:'numeric'})}catch{return d}}
 function todayUrdu(){return new Date().toLocaleDateString('ur-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
-
-// =====================================================
-// FIX 1: SLUGIFY — Clean short URL banata hai
-// Urdu title => date + random ID (short & shareable)
-// English title => clean-slug
-// =====================================================
-function slugify(t){
-  // Pehle English words nikalo
-  var eng = t.replace(/[\u0600-\u06FF]/g,' ').toLowerCase().trim()
-    .replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-')
-    .replace(/-+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
-  // Agar English words mile to use karo
-  if(eng && eng.replace(/-/g,'').length >= 3) return eng;
-  // Warna date + 6-char random ID
-  var d=new Date().toISOString().slice(0,10);
-  var id=Math.random().toString(36).substr(2,6);
-  return d+'-'+id;
-}
-
+function slugify(t){return t.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\u0600-\u06FF-]/g,'').slice(0,60)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function escUrl(s){return(s||'').replace(/"/g,'%22').replace(/</g,'%3C').replace(/>/g,'%3E')}
 
+// URL routing
+function getSlug(){return location.hash.replace('#/','').replace('news/','').trim()}
 function pushState(path){location.hash='#/'+path}
 
+// ======================================================
+// PRAYER TIMES (AlAdhan API)
+// ======================================================
 async function fetchPrayerTimes(){
   const today=new Date().toDateString();
   if(DB.prayer.lastUpdated===today&&DB.prayer.fajr!=='--:--')return;
@@ -336,6 +477,7 @@ async function fetchPrayerTimes(){
       const t=d.data.timings;
       DB.prayer={fajr:t.Fajr,zuhr:t.Dhuhr,asr:t.Asr,maghrib:t.Maghrib,isha:t.Isha,city:'لاہور',lastUpdated:today};
       saveDB();
+      // refresh prayer widget only
       const pw=document.getElementById('prayer-widget');
       if(pw)pw.innerHTML=buildPrayerInner();
     }
@@ -346,61 +488,107 @@ function getCurrentPrayer(){
   const now=new Date();
   const hm=(s)=>{const[h,m]=s.split(':').map(Number);return h*60+m};
   const cur=now.getHours()*60+now.getMinutes();
-  const prayers=[{time:DB.prayer.fajr},{time:DB.prayer.zuhr},{time:DB.prayer.asr},{time:DB.prayer.maghrib},{time:DB.prayer.isha}];
+  const prayers=[
+    {name:'فجر',time:DB.prayer.fajr},
+    {name:'ظہر',time:DB.prayer.zuhr},
+    {name:'عصر',time:DB.prayer.asr},
+    {name:'مغرب',time:DB.prayer.maghrib},
+    {name:'عشاء',time:DB.prayer.isha}
+  ];
   let active=4;
-  for(let i=0;i<prayers.length;i++){if(cur>=hm(prayers[i].time)&&(i===prayers.length-1||cur<hm(prayers[i+1].time))){active=i;break;}}
+  for(let i=0;i<prayers.length;i++){
+    if(cur>=hm(prayers[i].time)&&(i===prayers.length-1||cur<hm(prayers[i+1].time))){active=i;break;}
+  }
   return active;
 }
 
 function buildPrayerInner(){
-  const prayers=[{name:'فجر',time:DB.prayer.fajr},{name:'ظہر',time:DB.prayer.zuhr},{name:'عصر',time:DB.prayer.asr},{name:'مغرب',time:DB.prayer.maghrib},{name:'عشاء',time:DB.prayer.isha}];
-  const ai=getCurrentPrayer();
-  return prayers.map((p,i)=>`<div class="pt-cell ${i===ai?'active':''}"><div class="pt-name">${p.name}</div><div class="pt-time">${p.time}</div></div>`).join('');
+  const prayers=[
+    {key:'fajr',name:'فجر',time:DB.prayer.fajr},
+    {key:'zuhr',name:'ظہر',time:DB.prayer.zuhr},
+    {key:'asr',name:'عصر',time:DB.prayer.asr},
+    {key:'maghrib',name:'مغرب',time:DB.prayer.maghrib},
+    {key:'isha',name:'عشاء',time:DB.prayer.isha}
+  ];
+  const activeIdx=getCurrentPrayer();
+  return prayers.map((p,i)=>`<div class="pt-cell ${i===activeIdx?'active':''}"><div class="pt-name">${p.name}</div><div class="pt-time">${p.time}</div></div>`).join('');
 }
 
+// ======================================================
+// RENDER ENGINE
+// ======================================================
 function render(){
   const app=document.getElementById('app');
   if(S.adm&&!S.admIn){app.innerHTML=rLogin();return}
   if(S.adm){app.innerHTML=rAdmin();return}
   app.innerHTML=rSite();
+  // fetch prayers asynchronously after render
   fetchPrayerTimes();
 }
 
+// ======================================================
+// SITE SHELL
+// ======================================================
 function rSite(){
   let content;
   if(S.viewN!==null)content=rArticle();
   else if(S.catF!==null)content=rCatPg();
   else if(S.staticPg)content=rStaticPage(S.staticPg);
   else content=rHome();
-  return`<div style="direction:rtl;min-height:100vh;display:flex;flex-direction:column">${rHdr()}${rBrk()}${rNav()}<div class="wrap">${rSrch()}${content}</div>${rFtr()}</div>`;
-}
-
-function rHdr(){
-  const s=DB.settings;
-  return`<div class="hdr"><div class="hdr-top">
-<div class="hdr-left"></div>
-<div class="logo-center" onclick="goHome()" style="cursor:pointer">
-${s.logo?`<img src="${escUrl(s.logo)}" style="height:60px;width:auto;margin-bottom:4px" alt="لوگو">`:''}
-<div class="logo-text">${esc(s.siteName)}</div>
-<div class="logo-underline"></div>
-<div style="margin-top:6px;font-family:'Noto Nastaliq Urdu',serif;font-size:14px;color:var(--goldl);opacity:0.95;direction:rtl;text-align:center">
-<span style="font-size:12px;opacity:0.75">مدیرِ اعلیٰ: </span><span style="font-weight:600">${esc(s.chiefEditor)}</span></div>
-</div>
-<div class="hdr-right"><div style="display:flex;gap:6px">
-<button onclick="S.staticPg='search';S.viewN=null;S.catF=null;render()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);padding:7px 12px;border-radius:var(--r);font-size:13px">🔍</button>
-</div></div></div>
-<div class="date-bar"><span style="font-family:var(--fu)">${todayUrdu()}</span><span class="pst">Pakistan Standard Time (PKT)</span></div>
+  return`<div style="direction:rtl;min-height:100vh;display:flex;flex-direction:column">
+${rHdr()}${rBrk()}${rNav()}
+<div class="wrap">${rSrch()}${content}</div>
+${rFtr()}
 </div>`;
 }
 
+// ======================================================
+// HEADER
+// ======================================================
+function rHdr(){
+  const s=DB.settings;
+  return`<div class="hdr">
+<div class="hdr-top">
+  <div class="hdr-left"></div>
+  <div class="logo-center" onclick="goHome()" style="cursor:pointer">
+    ${s.logo?`<img src="${escUrl(s.logo)}" style="height:60px;width:auto;margin-bottom:4px" alt="لوگو">`:''}
+    <div class="logo-text">${esc(s.siteName)}</div>
+    <div class="logo-underline"></div>
+    <div style="margin-top:6px;font-family:'Noto Nastaliq Urdu',serif;font-size:14px;color:var(--goldl);letter-spacing:0px;opacity:0.95;direction:rtl;text-align:center">
+      <span style="font-size:12px;opacity:0.75;font-family:'Noto Nastaliq Urdu',serif">مدیرِ اعلیٰ: </span><span style="font-weight:600;font-family:'Noto Nastaliq Urdu',serif">${esc(s.chiefEditor)}</span>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div style="display:flex;gap:6px">
+      <button onclick="S.staticPg='search';S.viewN=null;S.catF=null;render()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);padding:7px 12px;border-radius:var(--r);font-size:13px;font-family:var(--fi)">🔍</button>
+    </div>
+  </div>
+</div>
+<div class="date-bar">
+  <span style="font-family:var(--fu)">${todayUrdu()}</span>
+  <span class="pst">Pakistan Standard Time (PKT)</span>
+</div>
+</div>`;
+}
+
+// ======================================================
+// BREAKING NEWS
+// ======================================================
 function rBrk(){
   const items=DB.breaking;
   if(!items.length)return'';
+  // Double the items for seamless loop
   const all=[...items,...items];
   const html=all.map(it=>`<span class="brk-item">${esc(it)}</span><span class="brk-sep">★ پاکستان نامہ ★</span>`).join('');
-  return`<div class="brk"><div class="brk-lbl"><div class="brk-dot"></div>تازہ خبریں</div><div class="brk-scroll"><div class="brk-inner">${html}</div></div></div>`;
+  return`<div class="brk">
+<div class="brk-lbl"><div class="brk-dot"></div>تازہ خبریں</div>
+<div class="brk-scroll"><div class="brk-inner">${html}</div></div>
+</div>`;
 }
 
+// ======================================================
+// NAV
+// ======================================================
 function rNav(){
   return`<nav class="nav"><div class="nav-inner">
 <a class="${!S.catF&&!S.viewN&&!S.staticPg?'act':''}" onclick="goHome()">🏠 ہوم</a>
@@ -408,6 +596,9 @@ ${DB.categories.map(c=>`<a class="${S.catF===c.id?'act':''}" onclick="setCAT(${c
 </div></nav>`;
 }
 
+// ======================================================
+// SEARCH BAR
+// ======================================================
 function rSrch(){
   return`<div class="srch-bar">
 <input id="si" type="text" dir="rtl" placeholder="خبریں، زمرے یا مصنف تلاش کریں..." value="${esc(S.srch)}" onkeydown="if(event.key==='Enter')doSrch()">
@@ -416,81 +607,195 @@ ${S.srch?`<button style="background:#999" onclick="S.srch='';S.staticPg=null;ren
 </div>`;
 }
 
+// ======================================================
+// HOME PAGE
+// ======================================================
 function rHome(){
   const featured=DB.news.filter(n=>n.featured).slice(0,3);
   const latest=[...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date));
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
-  const perPage=8;const totalPages=Math.ceil(latest.length/perPage);
+  const perPage=8;
+  const totalPages=Math.ceil(latest.length/perPage);
   const paginated=latest.slice((S.artPage-1)*perPage,S.artPage*perPage);
   const cats4=DB.categories.slice(0,6);
-  return`<div class="grid"><div>
-${featured.length?`<div style="margin-bottom:28px"><div class="sec-ttl">⭐ نمایاں خبریں <a onclick="S.artPage=1;render()">تمام دیکھیں ←</a></div><div class="feat-grid">${rCard(featured[0],'main')}<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side')).join('')}</div></div></div>`:''}
-<div style="margin-bottom:28px"><div class="sec-ttl">🕐 تازہ ترین خبریں</div>
+
+  return`<div class="grid">
+<div>
+${featured.length?`<div style="margin-bottom:28px">
+<div class="sec-ttl">⭐ نمایاں خبریں <a onclick="S.artPage=1;render()">تمام دیکھیں ←</a></div>
+<div class="feat-grid">
+${rCard(featured[0],'main')}
+<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side')).join('')}</div>
+</div></div>`:''}
+
+<div style="margin-bottom:28px">
+<div class="sec-ttl">🕐 تازہ ترین خبریں</div>
 <div class="nlist">${paginated.map(n=>rLI(n)).join('')}</div>
-${totalPages>1?`<div class="pg">${Array.from({length:totalPages},(_,i)=>`<button class="pg-btn ${S.artPage===i+1?'on':''}" onclick="S.artPage=${i+1};render();window.scrollTo(0,0)">${i+1}</button>`).join('')}</div>`:''}
+${totalPages>1?`<div class="pg">
+${Array.from({length:totalPages},(_,i)=>`<button class="pg-btn ${S.artPage===i+1?'on':''}" onclick="S.artPage=${i+1};render();window.scrollTo(0,0)">${i+1}</button>`).join('')}
+</div>`:''}
 </div>
-${cats4.map(cat=>{const cn=DB.news.filter(n=>n.catId===cat.id).slice(0,3);return cn.length?`<div style="margin-bottom:28px"><div class="sec-ttl" style="border-color:${cat.color}">${cat.icon} ${cat.name} <a onclick="setCAT(${cat.id})">مزید ←</a></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${cn.map(n=>rCard(n,'small')).join('')}</div></div>`:'';}).join('')}
-</div><div class="sb">${rSidebar(trending)}</div></div>`;
+
+${cats4.map(cat=>{
+  const cn=DB.news.filter(n=>n.catId===cat.id).slice(0,3);
+  return cn.length?`<div style="margin-bottom:28px">
+<div class="sec-ttl" style="border-color:${cat.color}">${cat.icon} ${cat.name} <a onclick="setCAT(${cat.id})">مزید ←</a></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${cn.map(n=>rCard(n,'small')).join('')}</div>
+</div>`:'';
+}).join('')}
+</div>
+<div class="sb">${rSidebar(trending)}</div>
+</div>`;
 }
 
+// ======================================================
+// SIDEBAR
+// ======================================================
 function rSidebar(tr){
-  return`<div class="prayer-w"><div class="prayer-hdr"><h4>🕌 نماز کے اوقات</h4><span class="prayer-city">${DB.prayer.city}</span></div><div class="prayer-grid" id="prayer-widget">${buildPrayerInner()}</div></div>
-<div class="rates-w sw"><div class="sw-ttl">📈 سونا اور زرمبادلہ</div><div class="sw-body">
-<div class="gold-bar"><span class="lbl">🥇 سونا 24K (فی تولہ)</span><span class="val">₨ ${DB.rates.gold24k.toLocaleString()}</span></div>
-${[{flag:'🇺🇸',name:'USD ڈالر',val:DB.rates.usd,ch:'+0.3%',up:true},{flag:'🇪🇺',name:'EUR یورو',val:DB.rates.eur,ch:'-0.1%',up:false},{flag:'🇸🇦',name:'SAR ریال',val:DB.rates.sar,ch:'+0.2%',up:true},{flag:'🇦🇪',name:'AED درہم',val:DB.rates.aed,ch:'+0.1%',up:true},{flag:'🇬🇧',name:'GBP پاؤنڈ',val:DB.rates.gbp,ch:'+0.4%',up:true}].map(r=>`<div class="rate-item"><span class="rate-label"><span class="rate-flag">${r.flag}</span>${r.name}</span><div style="text-align:left;direction:ltr"><div class="rate-val">₨ ${r.val.toFixed(2)}</div><span class="rate-change ${r.up?'rate-up':'rate-dn'}">${r.ch}</span></div></div>`).join('')}
-<div class="rates-update">آخری تازہ کاری: ${DB.rates.lastUpdated}</div></div></div>
-<div class="sw"><div class="sw-ttl">🔥 مقبول ترین</div><div class="sw-body">${tr.map((n,i)=>`<div class="pop-item" onclick="viewN(${n.id})"><div class="pop-n">${i+1}</div><div class="pop-tx">${esc(n.title)}</div></div>`).join('')}</div></div>
-<div class="sw"><div class="sw-ttl">📂 تمام زمرے</div><div class="sw-body">${DB.categories.map(c=>`<div onclick="setCAT(${c.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f9fffe'" onmouseout="this.style.background=''"><span style="font-family:var(--fu);font-size:14px;color:${c.color}">${c.icon} ${c.name}</span><span style="font-size:11px;background:${c.color}18;color:${c.color};padding:2px 9px;border-radius:10px;font-family:var(--fi)">${DB.news.filter(n=>n.catId===c.id).length}</span></div>`).join('')}</div></div>
-<div class="sw"><div class="sw-ttl">📢 اشتہار</div><div class="sw-body"><div style="background:#f5f5f5;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;min-height:240px;color:#bbb;font-family:var(--fi);font-size:13px;text-align:center;border-radius:var(--r);flex-direction:column;gap:6px"><span style="font-size:28px">📣</span><span>AdSense 300×250</span></div></div></div>`;
+  return`
+<div class="prayer-w">
+  <div class="prayer-hdr">
+    <h4>🕌 نماز کے اوقات</h4>
+    <span class="prayer-city">${DB.prayer.city}</span>
+  </div>
+  <div class="prayer-grid" id="prayer-widget">${buildPrayerInner()}</div>
+</div>
+
+<div class="rates-w sw">
+  <div class="sw-ttl">📈 سونا اور زرمبادلہ</div>
+  <div class="sw-body">
+    <div class="gold-bar">
+      <span class="lbl">🥇 سونا 24K (فی تولہ)</span>
+      <span class="val">₨ ${DB.rates.gold24k.toLocaleString()}</span>
+    </div>
+    ${[
+      {flag:'🇺🇸',name:'USD ڈالر',val:DB.rates.usd,ch:'+0.3%',up:true},
+      {flag:'🇪🇺',name:'EUR یورو',val:DB.rates.eur,ch:'-0.1%',up:false},
+      {flag:'🇸🇦',name:'SAR ریال',val:DB.rates.sar,ch:'+0.2%',up:true},
+      {flag:'🇦🇪',name:'AED درہم',val:DB.rates.aed,ch:'+0.1%',up:true},
+      {flag:'🇬🇧',name:'GBP پاؤنڈ',val:DB.rates.gbp,ch:'+0.4%',up:true},
+    ].map(r=>`<div class="rate-item">
+      <span class="rate-label"><span class="rate-flag">${r.flag}</span>${r.name}</span>
+      <div style="text-align:left;direction:ltr">
+        <div class="rate-val">₨ ${r.val.toFixed(2)}</div>
+        <span class="rate-change ${r.up?'rate-up':'rate-dn'}">${r.ch}</span>
+      </div>
+    </div>`).join('')}
+    <div class="rates-update">آخری تازہ کاری: ${DB.rates.lastUpdated}</div>
+  </div>
+</div>
+
+<div class="sw"><div class="sw-ttl">🔥 مقبول ترین</div><div class="sw-body">
+${tr.map((n,i)=>`<div class="pop-item" onclick="viewN(${n.id})">
+<div class="pop-n">${i+1}</div>
+<div class="pop-tx">${esc(n.title)}</div>
+</div>`).join('')}
+</div></div>
+
+<div class="sw"><div class="sw-ttl">📂 تمام زمرے</div><div class="sw-body">
+${DB.categories.map(c=>`<div onclick="setCAT(${c.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f9fffe'" onmouseout="this.style.background=''">
+<span style="font-family:var(--fu);font-size:14px;color:${c.color}">${c.icon} ${c.name}</span>
+<span style="font-size:11px;background:${c.color}18;color:${c.color};padding:2px 9px;border-radius:10px;font-family:var(--fi)">${DB.news.filter(n=>n.catId===c.id).length}</span>
+</div>`).join('')}
+</div></div>
+
+<div class="sw"><div class="sw-ttl">📢 اشتہار</div><div class="sw-body">
+<div style="background:#f5f5f5;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;min-height:240px;color:#bbb;font-family:var(--fi);font-size:13px;text-align:center;border-radius:var(--r);flex-direction:column;gap:6px">
+<span style="font-size:28px">📣</span><span>AdSense 300×250</span><span style="font-size:10px">اشتہاری جگہ</span>
+</div>
+</div></div>`;
 }
 
+// ======================================================
+// CARDS
+// ======================================================
 function rCard(n,sz){
   const cat=getCat(n.catId);
   const h=sz==='main'?'280px':sz==='small'?'155px':'145px';
   const ts=sz==='main'?'19px':'14px';
-  return`<div class="ncard" onclick="viewN(${n.id})"><div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span class="placeholder">📰</span>`}</div><div class="ncard-body"><span class="cat-badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span><div class="ncard-ttl" style="font-size:${ts}">${esc(n.title)}</div><div class="ncard-meta"><span>${fmtDate(n.date)}</span><span>${getAuth(n.author).name}</span><span class="views-badge">👁 ${n.views.toLocaleString()}</span></div></div></div>`;
+  return`<div class="ncard" onclick="viewN(${n.id})">
+<div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
+${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span class="placeholder">📰</span>`}
+</div>
+<div class="ncard-body">
+<span class="cat-badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span>
+<div class="ncard-ttl" style="font-size:${ts}">${esc(n.title)}</div>
+<div class="ncard-meta"><span>${fmtDate(n.date)}</span><span>${getAuth(n.author).name}</span><span class="views-badge">👁 ${n.views.toLocaleString()}</span></div>
+</div></div>`;
 }
 
 function rLI(n){
   const cat=getCat(n.catId);
-  return`<div class="nli" onclick="viewN(${n.id})"><div class="nli-body"><span class="cat-badge" style="background:${cat.color};font-size:10px">${cat.icon} ${cat.name}</span><div class="nli-ttl">${esc(n.title)}</div><div class="nli-meta">${fmtDate(n.date)} • ${getAuth(n.author).name} • 👁 ${n.views.toLocaleString()}</div></div><div class="nli-img" style="background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span style="font-size:26px;opacity:.3">📰</span>`}</div></div>`;
+  return`<div class="nli" onclick="viewN(${n.id})">
+<div class="nli-body">
+<span class="cat-badge" style="background:${cat.color};font-size:10px">${cat.icon} ${cat.name}</span>
+<div class="nli-ttl">${esc(n.title)}</div>
+<div class="nli-meta">${fmtDate(n.date)} • ${getAuth(n.author).name} • 👁 ${n.views.toLocaleString()}</div>
+</div>
+<div class="nli-img" style="background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
+${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span style="font-size:26px;opacity:.3">📰</span>`}
+</div>
+</div>`;
 }
 
+// ======================================================
+// CATEGORY PAGE
+// ======================================================
 function rCatPg(){
   const cat=DB.categories.find(c=>c.id===S.catF);
   const allNews=DB.news.filter(n=>n.catId===S.catF);
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
-  const perPage=10;const totalPages=Math.ceil(allNews.length/perPage);
+  const perPage=10;
+  const totalPages=Math.ceil(allNews.length/perPage);
   const paginated=allNews.slice((S.catPage-1)*perPage,S.catPage*perPage);
-  return`<div><div class="cat-hdr" style="background:linear-gradient(135deg,${cat?cat.color+'dd':'var(--gd)'},${cat?cat.color:'var(--gm)'})"><div class="cat-icon">${cat?cat.icon:'📰'}</div><div><h2>${cat?cat.name:'خبریں'}</h2><p>${allNews.length} خبریں دستیاب ہیں</p></div></div>
-<div class="grid"><div><div class="nlist">${paginated.length?paginated.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu);font-size:16px">اس زمرے میں ابھی کوئی خبر نہیں</div>`}</div>${totalPages>1?`<div class="pg">${Array.from({length:totalPages},(_,i)=>`<button class="pg-btn ${S.catPage===i+1?'on':''}" onclick="S.catPage=${i+1};render();window.scrollTo(0,0)">${i+1}</button>`).join('')}</div>`:''}
-</div><div class="sb">${rSidebar(trending)}</div></div></div>`;
+  return`<div>
+<div class="cat-hdr" style="background:linear-gradient(135deg,${cat?cat.color+'dd':'var(--gd)'},${cat?cat.color:'var(--gm)'})">
+<div class="cat-icon">${cat?cat.icon:'📰'}</div>
+<div><h2>${cat?cat.name:'خبریں'}</h2><p>${allNews.length} خبریں دستیاب ہیں</p></div>
+</div>
+<div class="grid">
+<div>
+<div class="nlist">${paginated.length?paginated.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu);font-size:16px">اس زمرے میں ابھی کوئی خبر نہیں</div>`}</div>
+${totalPages>1?`<div class="pg">${Array.from({length:totalPages},(_,i)=>`<button class="pg-btn ${S.catPage===i+1?'on':''}" onclick="S.catPage=${i+1};render();window.scrollTo(0,0)">${i+1}</button>`).join('')}</div>`:''}
+</div>
+<div class="sb">${rSidebar(trending)}</div>
+</div></div>`;
 }
 
+// ======================================================
+// ARTICLE PAGE
+// ======================================================
 function rArticle(){
   const n=DB.news.find(x=>x.id===S.viewN);
   if(!n)return`<p style="text-align:center;padding:40px;font-family:var(--fu)">خبر نہیں ملی</p>`;
   n.views++;saveDB();
   const cat=getCat(n.catId);
   const related=DB.news.filter(x=>x.catId===n.catId&&x.id!==n.id).slice(0,3);
-
-  // =====================================================
-  // FIX 2: buildShareLink — clean short URL
-  // =====================================================
   const shareLink=buildShareLink(n);
   const articleUrl=encodeURIComponent(shareLink);
   const articleTitle=encodeURIComponent(n.title);
   const fbShare=`https://www.facebook.com/sharer/sharer.php?u=${articleUrl}`;
   const waShare=`https://api.whatsapp.com/send?text=${articleTitle}%20${articleUrl}`;
   const twShare=`https://twitter.com/intent/tweet?text=${articleTitle}&url=${articleUrl}`;
+
+  // Format body with paragraphs
   const bodyHtml=n.body.split('\n').filter(p=>p.trim()).map(p=>`<p>${esc(p)}</p>`).join('');
-  return`<div class="grid"><div>
-<button class="back-btn" onclick="goHome()">← واپس</button>
+
+  return`<div class="grid">
+<div>
+<button class="back-btn" onclick="S.viewN=null;render()">← واپس</button>
 <div class="art-wrap">
 <span class="cat-badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span>
 <h1>${esc(n.title)}</h1>
-<div class="art-meta"><span style="font-family:var(--fu)">✍ ${getAuth(n.author).name}</span><span>📅 ${fmtDate(n.date)}</span><span>👁 ${n.views.toLocaleString()} مناظر</span>${n.tags?n.tags.split(',').map(t=>`<span class="badge bg">#${t.trim()}</span>`).join(''):''}</div>
-<div class="art-hero" style="background:linear-gradient(135deg,${cat.color}20,${cat.color}40);height:300px">${n.image?`<img src="${escUrl(n.image)}" alt="${esc(n.title)}">`:`<span style="font-size:72px;opacity:.2">📰</span>`}</div>
+<div class="art-meta">
+<span style="font-family:var(--fu)">✍ ${getAuth(n.author).name}</span>
+<span>📅 ${fmtDate(n.date)}</span>
+<span>👁 ${n.views.toLocaleString()} مناظر</span>
+${n.tags?n.tags.split(',').map(t=>`<span class="badge bg">#${t.trim()}</span>`).join(''):''}
+</div>
+<div class="art-hero" style="background:linear-gradient(135deg,${cat.color}20,${cat.color}40);height:300px">
+${n.image?`<img src="${escUrl(n.image)}" alt="${esc(n.title)}">`:`<span style="font-size:72px;opacity:.2">📰</span>`}
+</div>
 <div class="art-body">${bodyHtml}</div>
 <div class="share-row">
 <span style="font-family:var(--fu);font-size:14px;color:var(--ts)">شیئر کریں:</span>
@@ -498,11 +803,20 @@ function rArticle(){
 <button class="sh-btn" style="background:#25d366" onclick="window.open('${waShare}','_blank')">📱 WhatsApp</button>
 <button class="sh-btn" style="background:#1da1f2" onclick="window.open('${twShare}','_blank','width=600,height=400')">🐦 Twitter/X</button>
 <button class="sh-btn" style="background:var(--gd)" onclick="copyShareLink(${n.id})">🔗 لنک کاپی</button>
-</div></div>
-${related.length?`<div style="margin-top:22px"><div class="sec-ttl" style="border-color:${cat.color}">متعلقہ خبریں</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${related.map(x=>rCard(x,'small')).join('')}</div></div>`:''}
-</div><div class="sb">${rSidebar([...DB.news].sort((a,b)=>b.views-a.views).slice(0,5))}</div></div>`;
+</div>
+</div>
+${related.length?`<div style="margin-top:22px">
+<div class="sec-ttl" style="border-color:${cat.color}">متعلقہ خبریں</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${related.map(x=>rCard(x,'small')).join('')}</div>
+</div>`:''}
+</div>
+<div class="sb">${rSidebar([...DB.news].sort((a,b)=>b.views-a.views).slice(0,5))}</div>
+</div>`;
 }
 
+// ======================================================
+// STATIC PAGES
+// ======================================================
 function rStaticPage(pg){
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   let content='';
@@ -515,49 +829,188 @@ function rStaticPage(pg){
   return`<div class="grid"><div>${content}</div><div class="sb">${rSidebar(trending)}</div></div>`;
 }
 
-function rAbout(){return`<div class="page-wrap"><h1>ہمارے بارے میں</h1><hr class="page-divider"><p>پاکستان نامہ پاکستان اور دنیا کی تازہ ترین خبروں کا ایک قابل اعتماد اور معتبر ڈیجیٹل اخبار ہے۔</p><h3>ہمارا مشن</h3><p>ہمارا مقصد اردو دان طبقے کو جدید ڈیجیٹل پلیٹ فارم پر معیاری صحافت فراہم کرنا ہے۔</p><h3>ادارتی ٹیم</h3><p>مدیرِ اعلیٰ: <strong>محمد واجد عزیز</strong></p><h3>رابطہ</h3><p>📍 لاہور، پنجاب، پاکستان<br>📧 info@pakistannamaa.pk<br>📞 +92-42-1234567</p></div>`}
+function rAbout(){return`<div class="page-wrap">
+<h1>ہمارے بارے میں</h1><hr class="page-divider">
+<p>پاکستان نامہ پاکستان اور دنیا کی تازہ ترین خبروں کا ایک قابل اعتماد اور معتبر ڈیجیٹل اخبار ہے۔ ہم آپ کو صحیح، غیر جانبدارانہ اور بروقت خبریں فراہم کرنے کے لیے پرعزم ہیں۔</p>
+<h3>ہمارا مشن</h3>
+<p>ہمارا مقصد اردو دان طبقے کو جدید ڈیجیٹل پلیٹ فارم پر معیاری صحافت فراہم کرنا ہے۔ ہم سیاست، معیشت، کھیل، ٹیکنالوجی اور تفریح سمیت تمام شعبوں کی خبریں نشر کرتے ہیں۔</p>
+<h3>ادارتی ٹیم</h3>
+<p>مدیرِ اعلیٰ: <strong>محمد واجد عزیز</strong></p>
+<p>ہماری تجربہ کار ادارتی ٹیم ہر خبر کی تصدیق کرتی ہے تاکہ آپ تک صرف درست معلومات پہنچ سکیں۔</p>
+<h3>رابطہ</h3>
+<p>📍 لاہور، پنجاب، پاکستان<br>📧 info@pakistannamaa.pk<br>📞 +92-42-1234567</p>
+</div>`}
 
-function rContact(){return`<div class="page-wrap"><h1>رابطہ کریں</h1><hr class="page-divider"><div class="contact-form"><div class="cf-row"><div class="cf-field"><label>نام</label><input type="text" dir="rtl"></div><div class="cf-field"><label>Email</label><input type="email" dir="ltr"></div></div><div class="cf-field" style="margin-bottom:14px"><label>پیغام</label><textarea rows="5" dir="rtl"></textarea></div><button class="cf-submit" onclick="toast('پیغام موصول ہوا ✓')">📨 بھیجیں</button></div></div>`}
+function rContact(){return`<div class="page-wrap">
+<h1>رابطہ کریں</h1><hr class="page-divider">
+<p>آپ کے سوالات، تجاویز یا شکایات کے لیے ہم سے رابطہ کریں۔</p>
+<div class="contact-form">
+<div class="cf-row">
+<div class="cf-field"><label>نام</label><input type="text" placeholder="آپ کا نام" dir="rtl"></div>
+<div class="cf-field"><label>Email</label><input type="email" placeholder="email@example.com" dir="ltr"></div>
+</div>
+<div class="cf-row">
+<div class="cf-field"><label>فون نمبر</label><input type="tel" placeholder="+92-XXX-XXXXXXX" dir="ltr"></div>
+<div class="cf-field"><label>موضوع</label>
+<select dir="rtl"><option>خبر کی تصحیح</option><option>اشتہار کا پوچھنا</option><option>شکایت</option><option>تجویز</option><option>دیگر</option></select>
+</div>
+</div>
+<div class="cf-field" style="margin-bottom:14px"><label>پیغام</label><textarea placeholder="اپنا پیغام یہاں لکھیں..." rows="5" dir="rtl"></textarea></div>
+<button class="cf-submit" onclick="toast('آپ کا پیغام موصول ہوا۔ جلد رابطہ کیا جائے گا۔ ✓')">📨 پیغام بھیجیں</button>
+</div>
+<div style="margin-top:20px;font-family:var(--fi);font-size:13px;color:var(--ts);line-height:2">
+📍 لاہور، پنجاب، پاکستان<br>
+📧 info@pakistannamaa.pk<br>
+📞 +92-42-1234567
+</div>
+</div>`}
 
-function rAdvertise(){return`<div class="page-wrap"><h1>اشتہارات دیں</h1><hr class="page-divider"><p>پاکستان نامہ پر اشتہار دے کر لاکھوں اردو پڑھنے والوں تک پہنچیں۔</p><p>رابطہ: <strong>ads@pakistannamaa.pk</strong></p></div>`}
+function rAdvertise(){return`<div class="page-wrap">
+<h1>اشتہارات دیں</h1><hr class="page-divider">
+<p>پاکستان نامہ پر اشتہار دے کر لاکھوں اردو پڑھنے والوں تک اپنی آواز پہنچائیں۔</p>
+<h3>اشتہاری پیکجز</h3>
+${[
+  ['ہیڈر بینر (728×90)','ماہانہ','₨ 50,000'],
+  ['سائیڈبار (300×250)','ماہانہ','₨ 30,000'],
+  ['خبروں کے درمیان','فی ہفتہ','₨ 15,000'],
+  ['سپانسرڈ مضمون','ایک بار','₨ 25,000'],
+].map(([n,d,p])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0">
+<div><div style="font-family:var(--fu);font-size:15px;font-weight:600">${n}</div><div style="font-family:var(--fi);font-size:12px;color:var(--tm)">${d}</div></div>
+<div style="font-family:var(--fi);font-size:16px;font-weight:700;color:var(--gd)">${p}</div>
+</div>`).join('')}
+<p style="margin-top:16px">اشتہارات کے لیے رابطہ: <strong>ads@pakistannamaa.pk</strong></p>
+</div>`}
 
-function rPrivacy(){return`<div class="page-wrap"><h1>پرائیویسی پالیسی</h1><hr class="page-divider"><p>پاکستان نامہ آپ کی رازداری کا احترام کرتا ہے۔</p></div>`}
+function rPrivacy(){return`<div class="page-wrap">
+<h1>پرائیویسی پالیسی</h1><hr class="page-divider">
+<p>پاکستان نامہ آپ کی رازداری کا احترام کرتا ہے۔ یہ پالیسی بتاتی ہے کہ ہم آپ کا ڈیٹا کیسے استعمال کرتے ہیں۔</p>
+<h3>ڈیٹا جمع کرنا</h3>
+<p>ہم صرف وہی معلومات جمع کرتے ہیں جو آپ رضاکارانہ طور پر فراہم کرتے ہیں جیسے رابطہ فارم یا تبصرے۔</p>
+<h3>کوکیز</h3>
+<p>ہم بنیادی کوکیز استعمال کرتے ہیں تاکہ سائٹ بہتر طریقے سے کام کرے۔ آپ اپنے براؤزر سے کوکیز بند کر سکتے ہیں۔</p>
+<h3>تیسرے فریق</h3>
+<p>ہم Google Analytics اور AdSense استعمال کرتے ہیں۔ ان کی اپنی پرائیویسی پالیسیز ہیں جن کا ہم احترام کرتے ہیں۔</p>
+<h3>رابطہ</h3>
+<p>پرائیویسی سے متعلق سوالات کے لیے: privacy@pakistannamaa.pk</p>
+</div>`}
 
-function rSitemap(){return`<div class="page-wrap"><h1>سائٹ میپ</h1><hr class="page-divider"><h3>زمرے</h3>${DB.categories.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #f5f5f5;font-family:var(--fu);font-size:14px;cursor:pointer;color:${c.color}" onclick="setCAT(${c.id})">${c.icon} ${c.name}</div>`).join('')}</div>`}
+function rSitemap(){return`<div class="page-wrap">
+<h1>سائٹ میپ</h1><hr class="page-divider">
+<h3>اہم صفحات</h3>
+${[
+  ['🏠 ہوم','goHome()'],
+  ['ℹ️ ہمارے بارے میں',"openStatic('about')"],
+  ['📞 رابطہ کریں',"openStatic('contact')"],
+  ['📢 اشتہارات',"openStatic('advertise')"],
+  ['🔒 پرائیویسی پالیسی',"openStatic('privacy')"],
+].map(([l,a])=>`<div style="padding:8px 0;border-bottom:1px solid #f5f5f5;font-family:var(--fu);font-size:14px;cursor:pointer;color:var(--gm)" onclick="${a}">${l}</div>`).join('')}
+<h3 style="margin-top:16px">زمرے</h3>
+${DB.categories.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #f5f5f5;font-family:var(--fu);font-size:14px;cursor:pointer;color:${c.color}" onclick="setCAT(${c.id})">${c.icon} ${c.name} (${DB.news.filter(n=>n.catId===c.id).length} خبریں)</div>`).join('')}
+</div>`}
 
-function rSearchPage(){return`<div class="page-wrap"><h1>🔍 خبریں تلاش کریں</h1><hr class="page-divider"><p>اوپر سرچ بار میں لکھیں اور Enter دبائیں۔</p></div>`}
+function rSearchPage(){return`<div class="page-wrap">
+<h1>🔍 خبریں تلاش کریں</h1><hr class="page-divider">
+<p>اوپر موجود سرچ بار میں اپنا مطلوبہ موضوع لکھیں اور Enter دبائیں۔</p>
+</div>`}
 
+// ======================================================
+// FOOTER
+// ======================================================
 function rFtr(){
   const s=DB.settings;
-  return`<footer class="ftr"><div class="ftr-grid">
-<div class="ftr-col"><h4>${esc(s.siteName)}</h4><p>پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ۔</p><div class="social-row"><button class="soc-btn" style="background:#1877f2" onclick="window.open('${esc(s.fbUrl)}','_blank')">Facebook</button><button class="soc-btn" style="background:#25d366" onclick="window.open('${esc(s.waUrl)}','_blank')">WhatsApp</button><button class="soc-btn" style="background:#1da1f2" onclick="window.open('${esc(s.twUrl)}','_blank')">Twitter</button></div></div>
-<div class="ftr-col"><h4>اہم زمرے</h4><ul>${DB.categories.slice(0,7).map(c=>`<li><a onclick="setCAT(${c.id})">${c.icon} ${c.name}</a></li>`).join('')}</ul></div>
-<div class="ftr-col"><h4>ادارتی روابط</h4><ul><li><a onclick="openStatic('about')">ہمارے بارے میں</a></li><li><a onclick="openStatic('contact')">رابطہ کریں</a></li><li><a onclick="openStatic('advertise')">اشتہارات</a></li><li><a onclick="openStatic('privacy')">پرائیویسی</a></li></ul><div class="ftr-addr">📍 لاہور، پنجاب<br>📧 info@pakistannamaa.pk</div></div>
-</div><div class="ftr-btm">${esc(s.footerText)}</div></footer>`;
+  return`<footer class="ftr">
+<div class="ftr-grid">
+<div class="ftr-col">
+<h4>${esc(s.siteName)}</h4>
+<p>پاکستان نامہ — پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ۔</p>
+<p style="margin-top:6px;font-family:var(--fu);font-size:13px;color:rgba(255,255,255,.7)">مدیرِ اعلیٰ: ${esc(s.chiefEditor)}</p>
+<div class="social-row">
+<button class="soc-btn" style="background:#1877f2" onclick="window.open('${esc(s.fbUrl)}','_blank')">Facebook</button>
+<button class="soc-btn" style="background:#25d366" onclick="window.open('${esc(s.waUrl)}','_blank')">WhatsApp</button>
+<button class="soc-btn" style="background:#1da1f2" onclick="window.open('${esc(s.twUrl)}','_blank')">Twitter</button>
+<button class="soc-btn" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" onclick="window.open('${esc(s.igUrl)}','_blank')">Instagram</button>
+</div>
+</div>
+<div class="ftr-col">
+<h4>اہم زمرے</h4>
+<ul>${DB.categories.slice(0,7).map(c=>`<li><a onclick="setCAT(${c.id})">${c.icon} ${c.name}</a></li>`).join('')}</ul>
+</div>
+<div class="ftr-col">
+<h4>ادارتی روابط</h4>
+<ul>
+<li><a onclick="openStatic('about')">ہمارے بارے میں</a></li>
+<li><a onclick="openStatic('contact')">رابطہ کریں</a></li>
+<li><a onclick="openStatic('advertise')">اشتہارات دیں</a></li>
+<li><a onclick="openStatic('privacy')">پرائیویسی پالیسی</a></li>
+<li><a onclick="openStatic('sitemap')">سائٹ میپ</a></li>
+</ul>
+<div class="ftr-addr">📍 لاہور، پنجاب، پاکستان<br>📧 info@pakistannamaa.pk</div>
+</div>
+</div>
+<div class="ftr-btm">${esc(s.footerText)} | ${esc(s.chiefEditor)}</div>
+</footer>`;
 }
 
-function rLogin(){return`<div class="login-sc"><div class="login-card"><div class="login-logo">پاکستان نامہ</div><div class="login-sub">Admin Panel</div><div class="fg"><label>Password</label><input class="fc" id="pw" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div><button class="btn-p" style="width:100%;padding:11px" onclick="doLogin()">Login →</button><div id="lerr" style="color:#c0392b;font-size:12px;text-align:center;margin-top:8px;min-height:18px"></div><button onclick="closeAdm()" style="margin-top:12px;background:none;border:1px solid #ddd;color:#888;cursor:pointer;width:100%;font-size:13px;padding:8px;border-radius:var(--r)">← سائٹ پر واپس</button></div></div>`}
+// ======================================================
+// ADMIN — LOGIN
+// ======================================================
+function rLogin(){return`<div class="login-sc">
+<div class="login-card">
+<div class="login-logo">پاکستان نامہ</div>
+<div class="login-sub">Admin Panel — Secure Login</div>
+<div class="fg"><label>Email</label><input class="fc" id="lemail" value="ashich943@gmail.com" type="email" placeholder="admin@email.com" style="direction:ltr"></div>
+<div class="fg"><label>Password</label><input class="fc" id="pw" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+<button class="btn-p" style="width:100%;margin-top:6px;padding:11px" onclick="doLogin()">Login →</button>
+<div id="lerr" style="color:#c0392b;font-size:12px;text-align:center;margin-top:8px;min-height:18px"></div>
+<button onclick="closeAdm()" style="margin-top:12px;background:none;border:1px solid #ddd;color:#888;cursor:pointer;width:100%;font-size:13px;padding:8px;border-radius:var(--r)">← سائٹ پر واپس جائیں</button>
+</div></div>`}
 
+// ======================================================
+// ADMIN SHELL
+// ======================================================
 function rAdmin(){
-  const pages={dashboard:rDash,news:rNewsAdm,addNews:rAddNews,cats:rCatsAdm,authors:rAuthAdm,settings:rSettAdm,rates:rRatesAdm,prayer:rPrayerAdm,social:rSocialAdm,seo:rSeoAdm,password:rPassAdm};
+  const pages={
+    dashboard:rDash,news:rNewsAdm,addNews:rAddNews,
+    cats:rCatsAdm,authors:rAuthAdm,settings:rSettAdm,
+    rates:rRatesAdm,prayer:rPrayerAdm,social:rSocialAdm,seo:rSeoAdm,password:rPassAdm
+  };
   const fn=pages[S.admPg]||rDash;
-  return`<div class="adm-ov"><div class="adm-hdr"><h2>📰 ایڈمن پینل</h2><div style="display:flex;gap:8px"><button onclick="closeAdm()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px">← سائٹ دیکھیں</button><button onclick="S.admIn=false;closeAdm()" style="background:rgba(220,50,50,.5);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">Logout</button></div></div>
-<div class="adm-body"><div class="adm-sb"><ul class="adm-menu">
+  return`<div class="adm-ov">
+<div class="adm-hdr">
+<h2>📰 ایڈمن پینل</h2>
+<div style="display:flex;gap:8px">
+<button onclick="closeAdm()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-family:var(--fi)">← سائٹ دیکھیں</button>
+<button onclick="S.admIn=false;closeAdm()" style="background:rgba(220,50,50,.5);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:var(--fi)">Logout</button>
+</div>
+</div>
+<div class="adm-body">
+<div class="adm-sb">
+<ul class="adm-menu">
 <li><a class="${S.admPg==='dashboard'?'on':''}" onclick="setPg('dashboard')">📊 Dashboard</a></li>
 <li><a class="${S.admPg==='news'||S.admPg==='addNews'?'on':''}" onclick="setPg('news')">📰 خبریں</a></li>
 <li><a class="${S.admPg==='cats'?'on':''}" onclick="setPg('cats')">📂 زمرے</a></li>
 <li><a class="${S.admPg==='authors'?'on':''}" onclick="setPg('authors')">✍ مصنفین</a></li>
-<li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px"><a class="${S.admPg==='settings'?'on':''}" onclick="setPg('settings')">⚙ ترتیبات</a></li>
-<li><a class="${S.admPg==='rates'?'on':''}" onclick="setPg('rates')">📈 شرحِ زر</a></li>
+<li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px">
+<a class="${S.admPg==='settings'?'on':''}" onclick="setPg('settings')">⚙ سائٹ ترتیبات</a></li>
+<li><a class="${S.admPg==='rates'?'on':''}" onclick="setPg('rates')">📈 شرحِ زر و سونا</a></li>
 <li><a class="${S.admPg==='prayer'?'on':''}" onclick="setPg('prayer')">🕌 نماز اوقات</a></li>
 <li><a class="${S.admPg==='social'?'on':''}" onclick="setPg('social')">🔗 سوشل میڈیا</a></li>
-<li><a class="${S.admPg==='seo'?'on':''}" onclick="setPg('seo')">🔍 SEO</a></li>
-<li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px"><a class="${S.admPg==='password'?'on':''}" onclick="setPg('password')">🔐 پاس ورڈ</a></li>
-</ul></div><div class="adm-main">${fn()}</div></div></div>`;
+<li><a class="${S.admPg==='seo'?'on':''}" onclick="setPg('seo')">🔍 SEO & Ads</a></li>
+<li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px">
+<a class="${S.admPg==='password'?'on':''}" onclick="setPg('password')">🔐 پاس ورڈ بدلیں</a></li>
+</ul>
+</div>
+<div class="adm-main">${fn()}</div>
+</div>
+</div>`;
 }
 
+// ======================================================
+// ADMIN PAGES
+// ======================================================
 function rDash(){
   const tv=DB.news.reduce((s,n)=>s+n.views,0);
+  const today=DB.news.filter(n=>n.date===new Date().toISOString().split('T')[0]).length;
   return`<div class="adm-ttl">📊 Dashboard</div>
 <div class="stats-g">
 <div class="sc"><div class="n">${DB.news.length}</div><div class="l">کل خبریں</div></div>
@@ -566,16 +1019,34 @@ function rDash(){
 <div class="sc" style="border-color:#9c27b0"><div class="n">${tv.toLocaleString()}</div><div class="l">کل مناظرہ</div></div>
 </div>
 <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:var(--sh)">
-<h3 style="font-size:15px;font-weight:700;color:var(--gd);margin-bottom:16px">📋 تازہ ترین خبریں</h3>
+<h3 style="font-size:15px;font-weight:700;color:var(--gd);margin-bottom:16px;display:flex;align-items:center;gap:8px">📋 تازہ ترین خبریں</h3>
 <table class="dtbl"><thead><tr><th>عنوان</th><th>زمرہ</th><th>تاریخ</th><th>مناظرہ</th></tr></thead>
-<tbody>${[...DB.news].slice(0,8).map(n=>`<tr><td style="font-family:var(--fu);direction:rtl;font-size:14px;max-width:220px;cursor:pointer" onclick="viewNAdmin(${n.id})">${esc(n.title.substring(0,42))}...</td><td><span class="badge" style="background:${getCat(n.catId).color}22;color:${getCat(n.catId).color}">${getCat(n.catId).name}</span></td><td style="direction:ltr;font-size:11px;color:var(--tm)">${n.date}</td><td>${n.views.toLocaleString()}</td></tr>`).join('')}</tbody></table>
+<tbody>${[...DB.news].slice(0,8).map(n=>`<tr>
+<td style="font-family:var(--fu);direction:rtl;font-size:14px;max-width:220px;cursor:pointer" onclick="viewNAdmin(${n.id})">${esc(n.title.substring(0,42))}...</td>
+<td><span class="badge" style="background:${getCat(n.catId).color}22;color:${getCat(n.catId).color}">${getCat(n.catId).name}</span></td>
+<td style="direction:ltr;font-size:11px;color:var(--tm)">${n.date}</td>
+<td style="font-family:var(--fi)">${n.views.toLocaleString()}</td>
+</tr>`).join('')}</tbody></table>
 </div>`;
 }
 
 function rNewsAdm(){
   return`<div class="adm-ttl">📰 خبریں مینیجر <button class="btn-p" onclick="S.editN=null;setPg('addNews')">+ نئی خبر</button></div>
-<table class="dtbl" style="table-layout:fixed"><thead><tr><th style="width:40%">عنوان</th><th>زمرہ</th><th>تاریخ</th><th>نمایاں</th><th>مناظرہ</th><th>عمل</th></tr></thead>
-<tbody>${DB.news.map(n=>`<tr><td style="font-family:var(--fu);direction:rtl;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')">${esc(n.title.substring(0,38))}...</td><td><span class="badge" style="background:${getCat(n.catId).color}22;color:${getCat(n.catId).color};font-size:10px">${getCat(n.catId).name}</span></td><td style="direction:ltr;font-size:11px;color:var(--tm)">${n.date}</td><td>${n.featured?'⭐':'-'}</td><td>${n.views.toLocaleString()}</td><td><div style="display:flex;gap:5px"><button class="btn-s be" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')">✏</button><button class="btn-s bd" onclick="delN(${n.id})">🗑</button></div></td></tr>`).join('')}</tbody></table>`;
+<div style="background:#fff;border-radius:var(--rl);padding:14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;box-shadow:var(--sh)">
+<input id="admSrch" placeholder="خبریں تلاش کریں..." style="flex:1;padding:8px 12px;border:1.5px solid var(--bdr);border-radius:var(--r);font-size:13px;outline:none" oninput="render()">
+</div>
+<table class="dtbl" style="table-layout:fixed"><thead><tr><th style="width:35%">عنوان</th><th>زمرہ</th><th>تاریخ</th><th>نمایاں</th><th>مناظرہ</th><th>عمل</th></tr></thead>
+<tbody>${DB.news.map(n=>`<tr>
+<td style="font-family:var(--fu);direction:rtl;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')" title="${esc(n.title)}">${esc(n.title.substring(0,38))}...</td>
+<td><span class="badge" style="background:${getCat(n.catId).color}22;color:${getCat(n.catId).color};font-size:10px">${getCat(n.catId).name}</span></td>
+<td style="direction:ltr;font-size:11px;color:var(--tm)">${n.date}</td>
+<td>${n.featured?'⭐':'-'}</td>
+<td style="font-family:var(--fi)">${n.views.toLocaleString()}</td>
+<td><div style="display:flex;gap:5px">
+<button class="btn-s be" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')">✏</button>
+<button class="btn-s bd" onclick="delN(${n.id})">🗑</button>
+</div></td>
+</tr>`).join('')}</tbody></table>`;
 }
 
 function rAddNews(){
@@ -585,28 +1056,45 @@ function rAddNews(){
 <div class="fp">
 <div class="fr">
 <div class="fg"><label>اردو عنوان *</label><input class="fc" dir="rtl" id="ft" value="${esc(n.title)}" placeholder="خبر کا عنوان لکھیں" oninput="autoSlug()"></div>
-<div class="fg"><label>زمرہ *</label><select class="fc" id="fc">${DB.categories.map(c=>`<option value="${c.id}" ${n.catId==c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>
-</div>
-<div class="fg"><label>مواد (اردو) *</label><textarea class="fc" dir="rtl" id="fb" rows="8" style="font-family:var(--fu);font-size:15px;line-height:1.8">${esc(n.body)}</textarea></div>
+<div class="fg"><label>زمرہ *</label>
+<select class="fc" id="fc">${DB.categories.map(c=>`<option value="${c.id}" ${n.catId==c.id?'selected':''}>${c.name}</option>`).join('')}</select>
+</div></div>
+<div class="fg"><label>مواد (اردو) *</label>
+<textarea class="fc" dir="rtl" id="fb" rows="8" style="font-family:var(--fu);font-size:15px;line-height:1.8">${esc(n.body)}</textarea></div>
 <div class="fr">
-<div class="fg"><label>مصنف</label><select class="fc" id="fa">${DB.authors.map(a=>`<option value="${a.id}" ${n.author==a.id?'selected':''}>${a.name}</option>`).join('')}</select></div>
+<div class="fg"><label>مصنف</label>
+<select class="fc" id="fa">${DB.authors.map(a=>`<option value="${a.id}" ${n.author==a.id?'selected':''}>${a.name}</option>`).join('')}</select>
+</div>
 <div class="fg"><label>تاریخ اشاعت</label><input class="fc" type="date" id="fd" value="${n.date}"></div>
 </div>
 <div class="fr">
-<div class="fg"><label>ٹیگز</label><input class="fc" id="fk" value="${esc(n.tags)}" placeholder="سیاست, معیشت"></div>
+<div class="fg"><label>ٹیگز (کاما سے الگ)</label><input class="fc" id="fk" value="${esc(n.tags)}" placeholder="سیاست, معیشت"></div>
 <div class="fg"><label>تصویر</label>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<input class="fc" id="fi" value="${esc(n.image)}" placeholder="URL یا upload کریں" style="flex:1;direction:ltr;font-size:12px">
-<label style="background:linear-gradient(135deg,#3448c5,#5c6bc0);color:#fff;padding:9px 16px;border-radius:var(--r);cursor:pointer;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">📤 Upload<input type="file" accept="image/*" style="display:none" onchange="uploadToCloudinary(this)"></label>
+  <input class="fc" id="fi" value="${esc(n.image)}" placeholder="تصویر upload کریں یا URL لکھیں" style="flex:1;min-width:200px;direction:ltr;font-size:12px">
+  <label id="cld-btn" style="background:linear-gradient(135deg,#3448c5,#5c6bc0);color:#fff;padding:9px 16px;border-radius:var(--r);cursor:pointer;font-size:13px;font-family:var(--fi);white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s" onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+    📤 Cloudinary سے Upload
+    <input type="file" accept="image/*" style="display:none" onchange="uploadToCloudinary(this)">
+  </label>
 </div>
-<div id="cld-preview" style="margin-top:8px;display:${esc(n.image)?'block':'none'}">${n.image?`<img src="${escUrl(n.image)}" style="max-height:120px;border-radius:6px;border:1px solid #ddd">`:''}</div>
-<div id="cld-status" style="font-size:12px;margin-top:4px;color:var(--gm)"></div>
+<div id="cld-preview" style="margin-top:8px;display:${esc(n.image)?'block':'none'}">
+  ${n.image?`<img src="${escUrl(n.image)}" style="max-height:120px;border-radius:6px;border:1px solid #ddd">`:''} 
+</div>
+<div id="cld-status" style="font-size:12px;font-family:var(--fi);margin-top:4px;color:var(--gm)"></div>
 </div>
 </div>
-<div class="fg"><label>URL Slug (خودکار)</label><input class="fc" id="fsl" value="${esc(n.slug)}" style="direction:ltr;font-family:monospace"></div>
-<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-weight:600;letter-spacing:0"><input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:16px;height:16px"> نمایاں خبر</label></div>
+<div class="fg"><label>URL Slug</label><input class="fc" id="fsl" value="${esc(n.slug)}" placeholder="news-title-here" style="direction:ltr;font-family:monospace"></div>
+<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-weight:600;letter-spacing:0">
+<input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:16px;height:16px"> نمایاں خبر کے طور پر نشان زد کریں
+</label></div>
+<div style="border-top:1px solid #eee;padding-top:16px;margin-top:6px">
+<p style="font-size:12px;font-weight:700;color:#666;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">🔍 SEO ترتیبات</p>
+<div class="fr">
+<div class="fg"><label>Meta Title</label><input class="fc" id="fmt" value="${esc(n.metaTitle)}" placeholder="SEO title"></div>
+<div class="fg"><label>Meta Description</label><input class="fc" id="fmd" value="${esc(n.metaDesc)}" placeholder="SEO description"></div>
+</div></div>
 <div class="fa">
-<button class="btn-p" onclick="saveN(${ie?n.id:'null'})">${ie?'💾 اپ ڈیٹ':'✅ شائع کریں'}</button>
+<button class="btn-p" onclick="saveN(${ie?n.id:'null'})">${ie?'💾 اپ ڈیٹ کریں':'✅ شائع کریں'}</button>
 <button class="btn-sec" onclick="setPg('news')">Cancel</button>
 ${ie?`<button style="background:#dc3545;color:#fff;padding:9px 16px;border-radius:var(--r);border:none;cursor:pointer;font-size:13px" onclick="delN(${n.id})">🗑 حذف</button>`:''}
 </div></div>`;
@@ -615,108 +1103,206 @@ ${ie?`<button style="background:#dc3545;color:#fff;padding:9px 16px;border-radiu
 function rCatsAdm(){
   const ec=S.editC;
   return`<div class="adm-ttl">📂 زمرے مینیجر</div>
-<div class="fp" style="margin-bottom:18px"><p style="font-size:14px;font-weight:700;color:var(--gd);margin-bottom:14px">${ec?'زمرہ ترمیم':'نیا زمرہ'}</p>
-<div class="fr"><div class="fg"><label>اردو نام *</label><input class="fc" dir="rtl" id="cn" value="${ec?esc(ec.name):''}"></div><div class="fg"><label>Slug</label><input class="fc" id="cs" value="${ec?esc(ec.slug):''}" style="direction:ltr;font-family:monospace"></div></div>
-<div class="fr"><div class="fg"><label>آئیکن</label><input class="fc" id="ci" value="${ec?esc(ec.icon||'📰'):''}" style="font-size:20px;direction:ltr"></div><div class="fg"><label>رنگ</label><input type="color" class="fc" id="cc" value="${ec?ec.color:'#2db844'}" style="height:44px;cursor:pointer;padding:4px"></div></div>
-<div class="fa"><button class="btn-p" onclick="saveCat()">${ec?'💾 اپ ڈیٹ':'+ شامل کریں'}</button>${ec?`<button class="btn-sec" onclick="S.editC=null;render()">Cancel</button>`:''}</div></div>
-<table class="dtbl"><thead><tr><th>نام</th><th>Slug</th><th>خبریں</th><th>عمل</th></tr></thead>
-<tbody>${DB.categories.map(c=>`<tr><td style="font-family:var(--fu);direction:rtl;font-size:16px;color:${c.color}">${c.icon||''} ${c.name}</td><td style="direction:ltr;font-family:monospace;font-size:12px">${c.slug}</td><td><span class="badge bg">${DB.news.filter(n=>n.catId===c.id).length}</span></td><td><div style="display:flex;gap:5px"><button class="btn-s be" onclick="editCat(${c.id})">✏</button><button class="btn-s bd" onclick="delCat(${c.id})">🗑</button></div></td></tr>`).join('')}</tbody></table>`;
+<div class="fp" style="margin-bottom:18px">
+<p style="font-size:14px;font-weight:700;color:var(--gd);margin-bottom:14px">${ec?'زمرہ ترمیم کریں':'نیا زمرہ شامل کریں'}</p>
+<div class="fr">
+<div class="fg"><label>اردو نام *</label><input class="fc" dir="rtl" id="cn" value="${ec?esc(ec.name):''}" placeholder="زمرے کا نام"></div>
+<div class="fg"><label>Slug (English) *</label><input class="fc" id="cs" value="${ec?esc(ec.slug):''}" placeholder="category-slug" style="direction:ltr;font-family:monospace"></div>
+</div>
+<div class="fr">
+<div class="fg"><label>آئیکن (Emoji)</label><input class="fc" id="ci" value="${ec?esc(ec.icon||'📰'):''}" placeholder="📰" style="font-size:20px;direction:ltr"></div>
+<div class="fg"><label>رنگ</label><input type="color" class="fc" id="cc" value="${ec?ec.color:'#2db844'}" style="height:44px;cursor:pointer;padding:4px"></div>
+</div>
+<div class="fa">
+<button class="btn-p" onclick="saveCat()">${ec?'💾 اپ ڈیٹ':'+ شامل کریں'}</button>
+${ec?`<button class="btn-sec" onclick="S.editC=null;render()">Cancel</button>`:''}
+</div></div>
+<table class="dtbl"><thead><tr><th>نام</th><th>Slug</th><th>رنگ</th><th>خبریں</th><th>عمل</th></tr></thead>
+<tbody>${DB.categories.map(c=>`<tr>
+<td style="font-family:var(--fu);direction:rtl;font-size:16px;font-weight:600;color:${c.color}">${c.icon||''} ${c.name}</td>
+<td style="direction:ltr;font-family:monospace;font-size:12px;color:#666">${c.slug}</td>
+<td><div style="display:flex;align-items:center;gap:8px"><div style="width:22px;height:22px;border-radius:5px;background:${c.color}"></div><span style="font-size:12px;direction:ltr">${c.color}</span></div></td>
+<td><span class="badge bg">${DB.news.filter(n=>n.catId===c.id).length}</span></td>
+<td><div style="display:flex;gap:5px">
+<button class="btn-s be" onclick="editCat(${c.id})">✏</button>
+<button class="btn-s bd" onclick="delCat(${c.id})">🗑</button>
+</div></td>
+</tr>`).join('')}</tbody></table>`;
 }
 
 function rAuthAdm(){
   const ea=S.editA;
   return`<div class="adm-ttl">✍ مصنفین مینیجر</div>
-<div class="fp" style="margin-bottom:18px"><p style="font-size:14px;font-weight:700;color:var(--gd);margin-bottom:14px">${ea?'مصنف ترمیم':'نیا مصنف'}</p>
-<div class="fr"><div class="fg"><label>نام</label><input class="fc" dir="rtl" id="an" value="${ea?esc(ea.name):''}"></div><div class="fg"><label>Email</label><input class="fc" id="ae" value="${ea?esc(ea.email):''}" style="direction:ltr"></div></div>
-<div class="fg"><label>تعارف</label><input class="fc" dir="rtl" id="ab" value="${ea?esc(ea.bio):''}"></div>
-<div class="fa"><button class="btn-p" onclick="saveAuth()">${ea?'💾 اپ ڈیٹ':'+ شامل'}</button>${ea?`<button class="btn-sec" onclick="S.editA=null;render()">Cancel</button>`:''}</div></div>
-<table class="dtbl"><thead><tr><th>نام</th><th>Email</th><th>خبریں</th><th>عمل</th></tr></thead>
-<tbody>${DB.authors.map(a=>`<tr><td style="font-family:var(--fu);direction:rtl">${esc(a.name)}</td><td style="direction:ltr;font-size:12px">${esc(a.email)}</td><td><span class="badge bg">${DB.news.filter(n=>n.author===a.id).length}</span></td><td><div style="display:flex;gap:5px"><button class="btn-s be" onclick="editAuth(${a.id})">✏</button><button class="btn-s bd" onclick="delAuth(${a.id})">🗑</button></div></td></tr>`).join('')}</tbody></table>`;
+<div class="fp" style="margin-bottom:18px">
+<p style="font-size:14px;font-weight:700;color:var(--gd);margin-bottom:14px">${ea?'مصنف ترمیم':'نیا مصنف'}</p>
+<div class="fr">
+<div class="fg"><label>نام (اردو)</label><input class="fc" dir="rtl" id="an" value="${ea?esc(ea.name):''}" placeholder="مصنف کا نام"></div>
+<div class="fg"><label>Email</label><input class="fc" id="ae" value="${ea?esc(ea.email):''}" placeholder="email@domain.com" style="direction:ltr"></div>
+</div>
+<div class="fg"><label>تعارف</label><input class="fc" dir="rtl" id="ab" value="${ea?esc(ea.bio):''}" placeholder="مختصر تعارف"></div>
+<div class="fa">
+<button class="btn-p" onclick="saveAuth()">${ea?'💾 اپ ڈیٹ':'+ شامل کریں'}</button>
+${ea?`<button class="btn-sec" onclick="S.editA=null;render()">Cancel</button>`:''}
+</div></div>
+<table class="dtbl"><thead><tr><th>نام</th><th>Email</th><th>تعارف</th><th>خبریں</th><th>عمل</th></tr></thead>
+<tbody>${DB.authors.map(a=>`<tr>
+<td style="font-family:var(--fu);direction:rtl;font-size:15px;font-weight:600">${esc(a.name)}</td>
+<td style="direction:ltr;font-size:12px;color:var(--tm)">${esc(a.email)}</td>
+<td style="font-family:var(--fu);direction:rtl;font-size:13px">${esc(a.bio)}</td>
+<td><span class="badge bg">${DB.news.filter(n=>n.author===a.id).length}</span></td>
+<td><div style="display:flex;gap:5px">
+<button class="btn-s be" onclick="editAuth(${a.id})">✏</button>
+<button class="btn-s bd" onclick="delAuth(${a.id})">🗑</button>
+</div></td>
+</tr>`).join('')}</tbody></table>`;
 }
 
 function rSettAdm(){
   const s=DB.settings;
-  return`<div class="adm-ttl">⚙ سائٹ ترتیبات</div><div class="fp">
-<div class="fr"><div class="fg"><label>سائٹ کا نام</label><input class="fc" dir="rtl" id="sn" value="${esc(s.siteName)}"></div><div class="fg"><label>مدیرِ اعلیٰ</label><input class="fc" dir="rtl" id="se" value="${esc(s.chiefEditor)}" style="font-family:var(--fu)"></div></div>
-<div class="fg"><label>لوگو URL</label><input class="fc" id="sl" value="${esc(s.logo)}" style="direction:ltr"></div>
-<div class="fg"><label>فوٹر متن</label><input class="fc" dir="rtl" id="sf" value="${esc(s.footerText)}"></div>
-<div class="fg"><label>بریکنگ نیوز (ہر سطر ایک خبر)</label><textarea class="fc" dir="rtl" id="sb" rows="6" style="font-family:var(--fu);font-size:14px;line-height:1.8">${DB.breaking.map(b=>esc(b)).join('\n')}</textarea></div>
-<div class="fa"><button class="btn-p" onclick="saveSett()">💾 محفوظ کریں</button><button class="btn-sec" onclick="clearSiteCache()" style="background:#c0392b">🗑 Cache صاف</button></div>
+  return`<div class="adm-ttl">⚙ سائٹ ترتیبات</div>
+<div class="fp">
+<div class="fr">
+<div class="fg"><label>سائٹ کا نام (اردو)</label><input class="fc" dir="rtl" id="sn" value="${esc(s.siteName)}"></div>
+<div class="fg"><label>مدیرِ اعلیٰ کا نام (اردو میں)</label><input class="fc" dir="rtl" id="se" value="${esc(s.chiefEditor)}" placeholder="مثلاً: محمد واجد عزیز" style="font-family:var(--fu);font-size:15px"></div>
+</div>
+<div class="fg"><label>لوگو URL</label><input class="fc" id="sl" value="${esc(s.logo)}" placeholder="https://...logo.png" style="direction:ltr"></div>
+<div class="fg"><label>فوٹر متن (اردو)</label><input class="fc" dir="rtl" id="sf" value="${esc(s.footerText)}"></div>
+<div class="fg"><label>بریکنگ نیوز (ہر سطر ایک خبر)</label>
+<textarea class="fc" dir="rtl" id="sb" rows="6" style="font-family:var(--fu);font-size:14px;line-height:1.8">${DB.breaking.map(b=>esc(b)).join('\n')}</textarea></div>
+<div class="fa"><button class="btn-p" onclick="saveSett()">💾 ترتیبات محفوظ کریں</button><button class="btn-sec" onclick="clearSiteCache()" style="background:#c0392b;margin-right:8px">🗑 Cache صاف کریں</button></div>
 </div>`;
 }
 
-window.clearSiteCache=()=>{if(confirm('تمام data حذف؟')){localStorage.clear();toast('صاف — reload...',2000);setTimeout(()=>location.reload(),2000)}}
+window.clearSiteCache=()=>{
+  if(confirm('تمام localStorage data حذف ہوگا۔\nویب سائٹ نئے سرے سے لوڈ ہوگی۔\nیقین ہے؟')){
+    localStorage.clear();toast('صاف ہو گیا — دوبارہ لوڈ ہو رہا ہے...',2000);
+    setTimeout(()=>location.reload(),2000);
+  }
+}
 
 function rRatesAdm(){
   const r=DB.rates;
-  return`<div class="adm-ttl">📈 شرحِ زر</div><div class="fp">
-<div class="fr"><div class="fg"><label>سونا 24K (فی تولہ)</label><input class="fc" type="number" id="rgold" value="${r.gold24k}" style="direction:ltr"></div><div class="fg"><label>USD</label><input class="fc" type="number" step="0.01" id="rusd" value="${r.usd}" style="direction:ltr"></div></div>
-<div class="fr"><div class="fg"><label>EUR</label><input class="fc" type="number" step="0.01" id="reur" value="${r.eur}" style="direction:ltr"></div><div class="fg"><label>SAR</label><input class="fc" type="number" step="0.01" id="rsar" value="${r.sar}" style="direction:ltr"></div></div>
-<div class="fr"><div class="fg"><label>AED</label><input class="fc" type="number" step="0.01" id="raed" value="${r.aed}" style="direction:ltr"></div><div class="fg"><label>GBP</label><input class="fc" type="number" step="0.01" id="rgbp" value="${r.gbp}" style="direction:ltr"></div></div>
-<div class="fa"><button class="btn-p" onclick="saveRates()">💾 محفوظ</button></div></div>`;
+  return`<div class="adm-ttl">📈 شرحِ زر اور سونا کی قیمتیں</div>
+<div class="fp">
+<div class="fr">
+<div class="fg"><label>سونا 24K (فی تولہ - روپے)</label><input class="fc" type="number" id="rgold" value="${r.gold24k}" style="direction:ltr"></div>
+<div class="fg"><label>USD (روپے فی ڈالر)</label><input class="fc" type="number" step="0.01" id="rusd" value="${r.usd}" style="direction:ltr"></div>
+</div>
+<div class="fr">
+<div class="fg"><label>EUR (روپے فی یورو)</label><input class="fc" type="number" step="0.01" id="reur" value="${r.eur}" style="direction:ltr"></div>
+<div class="fg"><label>SAR (روپے فی ریال)</label><input class="fc" type="number" step="0.01" id="rsar" value="${r.sar}" style="direction:ltr"></div>
+</div>
+<div class="fr">
+<div class="fg"><label>AED (روپے فی درہم)</label><input class="fc" type="number" step="0.01" id="raed" value="${r.aed}" style="direction:ltr"></div>
+<div class="fg"><label>GBP (روپے فی پاؤنڈ)</label><input class="fc" type="number" step="0.01" id="rgbp" value="${r.gbp}" style="direction:ltr"></div>
+</div>
+<div class="fa"><button class="btn-p" onclick="saveRates()">💾 قیمتیں محفوظ کریں</button></div>
+</div>`;
 }
 
 function rPrayerAdm(){
   const p=DB.prayer;
-  return`<div class="adm-ttl">🕌 نماز اوقات</div><div class="fp">
+  return`<div class="adm-ttl">🕌 نماز اوقات کی ترتیب</div>
+<div class="fp">
+<p style="font-size:13px;color:var(--tm);margin-bottom:16px;font-family:var(--fi)">یہ اوقات AlAdhan API سے خودکار لیے جاتے ہیں۔ آپ دستی ترمیم بھی کر سکتے ہیں۔</p>
 <div class="fg"><label>شہر</label><input class="fc" dir="rtl" id="pcity" value="${esc(p.city)}"></div>
-<div class="fr"><div class="fg"><label>فجر</label><input class="fc" id="pfajr" value="${p.fajr}" style="direction:ltr"></div><div class="fg"><label>ظہر</label><input class="fc" id="pzuhr" value="${p.zuhr}" style="direction:ltr"></div></div>
-<div class="fr"><div class="fg"><label>عصر</label><input class="fc" id="pasr" value="${p.asr}" style="direction:ltr"></div><div class="fg"><label>مغرب</label><input class="fc" id="pmaghrib" value="${p.maghrib}" style="direction:ltr"></div></div>
+<div class="fr">
+<div class="fg"><label>فجر</label><input class="fc" id="pfajr" value="${p.fajr}" style="direction:ltr"></div>
+<div class="fg"><label>ظہر</label><input class="fc" id="pzuhr" value="${p.zuhr}" style="direction:ltr"></div>
+</div>
+<div class="fr">
+<div class="fg"><label>عصر</label><input class="fc" id="pasr" value="${p.asr}" style="direction:ltr"></div>
+<div class="fg"><label>مغرب</label><input class="fc" id="pmaghrib" value="${p.maghrib}" style="direction:ltr"></div>
+</div>
 <div class="fg"><label>عشاء</label><input class="fc" id="pisha" value="${p.isha}" style="direction:ltr"></div>
-<div class="fa"><button class="btn-p" onclick="savePrayer()">💾 محفوظ</button><button class="btn-sec" onclick="refreshPrayer()">🔄 API سے تازہ</button></div></div>`;
+<div class="fa">
+<button class="btn-p" onclick="savePrayer()">💾 محفوظ کریں</button>
+<button class="btn-sec" onclick="refreshPrayer()">🔄 API سے تازہ کریں</button>
+</div>
+</div>`;
 }
 
 function rSocialAdm(){
   const s=DB.settings;
-  return`<div class="adm-ttl">🔗 سوشل میڈیا</div><div class="fp">
-<div class="fg"><label>Facebook</label><input class="fc" id="sfb" value="${esc(s.fbUrl)}" style="direction:ltr"></div>
-<div class="fg"><label>Twitter/X</label><input class="fc" id="stw" value="${esc(s.twUrl)}" style="direction:ltr"></div>
-<div class="fg"><label>WhatsApp</label><input class="fc" id="swa" value="${esc(s.waUrl)}" style="direction:ltr"></div>
-<div class="fg"><label>Instagram</label><input class="fc" id="sig" value="${esc(s.igUrl)}" style="direction:ltr"></div>
-<div class="fa"><button class="btn-p" onclick="saveSocial()">💾 محفوظ</button></div></div>`;
+  return`<div class="adm-ttl">🔗 سوشل میڈیا لنکس</div>
+<div class="fp">
+<div class="fg"><label>Facebook URL</label><input class="fc" id="sfb" value="${esc(s.fbUrl)}" style="direction:ltr" placeholder="https://facebook.com/page"></div>
+<div class="fg"><label>Twitter/X URL</label><input class="fc" id="stw" value="${esc(s.twUrl)}" style="direction:ltr" placeholder="https://twitter.com/handle"></div>
+<div class="fg"><label>WhatsApp Channel</label><input class="fc" id="swa" value="${esc(s.waUrl)}" style="direction:ltr" placeholder="https://wa.me/..."></div>
+<div class="fg"><label>Instagram URL</label><input class="fc" id="sig" value="${esc(s.igUrl)}" style="direction:ltr" placeholder="https://instagram.com/page"></div>
+<div class="fa"><button class="btn-p" onclick="saveSocial()">💾 لنکس محفوظ کریں</button></div>
+</div>`;
 }
 
 function rSeoAdm(){
-  return`<div class="adm-ttl">🔍 SEO & Ads</div><div class="fp">
-<div class="fg"><label>Google AdSense ID</label><input class="fc" id="aid" value="${esc(DB.settings.adsenseId)}" placeholder="ca-pub-XXXXXXX" style="direction:ltr;font-family:monospace"></div>
-<div class="fa"><button class="btn-p" onclick="saveAds()">💾 محفوظ</button></div></div>`;
+  return`<div class="adm-ttl">🔍 SEO & اشتہارات</div>
+<div class="fp">
+<div class="fg"><label>Google AdSense Publisher ID</label><input class="fc" id="aid" value="${esc(DB.settings.adsenseId)}" placeholder="ca-pub-XXXXXXXXXXXXXXXX" style="direction:ltr;font-family:monospace"></div>
+<div style="border-top:1px solid #eee;padding-top:16px;margin-top:8px">
+<p style="font-size:12px;font-weight:700;color:#666;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">SEO حالت</p>
+${[
+  ['Schema Markup','News Article Schema','✅ فعال'],
+  ['RTL Meta Tags','اردو ویب کے لیے','✅ فعال'],
+  ['Open Graph','Facebook/WhatsApp پریویو','✅ فعال'],
+  ['Twitter Cards','Twitter پریویو','✅ فعال'],
+  ['Slug-based URLs','خبر کا منفرد لنک','✅ فعال'],
+  ['Responsive Design','موبائل اور ڈیسک ٹاپ','✅ فعال'],
+  ['Prayer Times API','AlAdhan.com','✅ فعال'],
+  ['LocalStorage Persistence','ڈیٹا محفوظ رہتا ہے','✅ فعال'],
+].map(([l,d,s])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f5">
+<div><div style="font-size:13px;font-weight:600">${l}</div><div style="font-size:11px;color:#aaa">${d}</div></div>
+<span style="color:#155724;font-size:13px;background:#d4edda;padding:2px 9px;border-radius:10px;font-family:var(--fi)">${s}</span>
+</div>`).join('')}
+</div>
+<div class="fa"><button class="btn-p" onclick="saveAds()">💾 محفوظ کریں</button></div>
+</div>`;
 }
 
 function rPassAdm(){
-  return`<div class="adm-ttl">🔐 پاس ورڈ بدلیں</div><div class="fp" style="max-width:400px">
-<div class="fg"><label>موجودہ پاس ورڈ</label><input class="fc" type="password" id="pold"></div>
-<div class="fg"><label>نیا پاس ورڈ</label><input class="fc" type="password" id="pnew"></div>
-<div class="fg"><label>نیا پاس ورڈ دوبارہ</label><input class="fc" type="password" id="pnew2"></div>
-<div id="perr" style="color:#c0392b;font-size:12px;min-height:18px"></div>
-<div class="fa"><button class="btn-p" onclick="changePass()">🔐 بدلیں</button></div></div>`;
+  return`<div class="adm-ttl">🔐 پاس ورڈ تبدیل کریں</div>
+<div class="fp" style="max-width:400px">
+<div class="fg"><label>موجودہ پاس ورڈ</label><input class="fc" type="password" id="pold" placeholder="••••••••"></div>
+<div class="fg"><label>نیا پاس ورڈ</label><input class="fc" type="password" id="pnew" placeholder="••••••••"></div>
+<div class="fg"><label>نیا پاس ورڈ دوبارہ</label><input class="fc" type="password" id="pnew2" placeholder="••••••••"></div>
+<div id="perr" style="color:#c0392b;font-size:12px;min-height:18px;margin-top:4px"></div>
+<div class="fa"><button class="btn-p" onclick="changePass()">🔐 پاس ورڈ بدلیں</button></div>
+</div>`;
 }
 
-// =====================================================
+// ======================================================
 // ACTIONS
-// =====================================================
-window.goHome=()=>{S.viewN=null;S.catF=null;S.srch='';S.staticPg=null;S.artPage=1;pushState('');render()}
-window.setCAT=(id)=>{S.catF=id;S.viewN=null;S.srch='';S.staticPg=null;S.catPage=1;pushState('cat/'+DB.categories.find(c=>c.id===id)?.slug||id);render();window.scrollTo(0,0)}
-
-// =====================================================
-// FIX 3: viewN — URL bhi update karta hai jab article khule
-// =====================================================
-window.viewN=(id)=>{
-  const n=DB.news.find(x=>x.id===id);
-  S.viewN=id;S.srch='';S.staticPg=null;
-  if(n&&n.slug) pushState('news/'+n.slug);
-  render();window.scrollTo(0,0);
-}
-
+// ======================================================
+window.goHome=()=>{S.viewN=null;S.catF=null;S.srch='';S.staticPg=null;S.artPage=1;render()}
+window.setCAT=(id)=>{S.catF=id;S.viewN=null;S.srch='';S.staticPg=null;S.catPage=1;render();window.scrollTo(0,0)}
+window.viewN=(id)=>{S.viewN=id;S.srch='';S.staticPg=null;render();window.scrollTo(0,0)}
 window.openAdm=()=>{S.adm=true;render()}
 window.closeAdm=()=>{S.adm=false;render()}
+// Secret admin shortcut: press Ctrl + Shift + A
 document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='A'){e.preventDefault();openAdm();}});
 window.openStatic=(pg)=>{S.staticPg=pg;S.viewN=null;S.catF=null;S.srch='';render();window.scrollTo(0,0)}
 window.viewNAdmin=(id)=>{S.adm=false;viewN(id)}
 
-window.doLogin=()=>{
+window.doLogin=async()=>{
   const pw=document.getElementById('pw')?.value||'';
+  const emailInput=document.getElementById('lemail')?.value||'ashich943@gmail.com';
+  const errEl=document.getElementById('lerr');
+  // Try Firebase Auth first
+  if(window._fb){
+    try{
+      if(errEl)errEl.textContent='⏳ لاگ ان ہو رہے ہیں...';
+      await window._fb.signInWithEmailAndPassword(window._fb.auth, emailInput, pw);
+      window._fbUser = window._fb.auth.currentUser;
+      S.admIn=true;render();return;
+    }catch(e){
+      // Fallback to local password check
+      if(pw===PASS){S.admIn=true;render();return;}
+      if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں';
+      return;
+    }
+  }
+  // No Firebase — use local password
   if(pw===PASS){S.admIn=true;render()}
-  else{const e=document.getElementById('lerr');if(e)e.textContent='غلط پاس ورڈ'}
+  else{if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں'}
 }
 window.setPg=(p)=>{S.admPg=p;S.editN=null;S.editC=null;S.editA=null;render()}
 
@@ -724,10 +1310,18 @@ window.doSrch=()=>{
   const v=document.getElementById('si')?.value?.trim()||'';
   if(!v)return;
   S.srch=v;S.catF=null;S.viewN=null;S.staticPg=null;
-  const res=DB.news.filter(n=>n.title.includes(v)||n.body.includes(v)||(n.tags||'').toLowerCase().includes(v.toLowerCase()));
+  const q=v.toLowerCase();
+  const res=DB.news.filter(n=>n.title.includes(v)||n.body.includes(v)||n.tags.toLowerCase().includes(q));
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
+  const app=document.getElementById('app');
   const inner=document.querySelector('.grid');
-  if(inner){inner.innerHTML=`<div><div class="sec-ttl">🔍 "${esc(v)}" (${res.length})</div><div class="nlist">${res.length?res.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu)">کوئی نتیجہ نہیں</div>`}</div></div><div class="sb">${rSidebar(trending)}</div>`;}
+  if(inner){
+    inner.innerHTML=`<div>
+<div class="sec-ttl">🔍 نتائج: "${esc(v)}" <span style="font-weight:400;font-size:13px;color:var(--tm)">(${res.length} خبریں)</span></div>
+<div class="nlist">${res.length?res.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu);font-size:16px">🔍 کوئی نتیجہ نہیں ملا</div>`}</div>
+</div>
+<div class="sb">${rSidebar(trending)}</div>`;
+  }
 }
 
 window.autoSlug=()=>{
@@ -737,11 +1331,12 @@ window.autoSlug=()=>{
 }
 document.addEventListener('click',e=>{if(e.target.id==='fsl')e.target.dataset.manual='1'});
 
-window.saveN=(id)=>{
+window.saveN=async(id)=>{
   const t=document.getElementById('ft')?.value?.trim()||'';
   const b=document.getElementById('fb')?.value?.trim()||'';
   if(!t||!b){toast('عنوان اور مواد ضروری ہیں');return}
   const sl=document.getElementById('fsl')?.value?.trim()||slugify(t);
+  const existingNews = id ? DB.news.find(n=>n.id===id) : null;
   const obj={
     id:id||S.nid++,title:t,body:b,
     catId:parseInt(document.getElementById('fc')?.value||1),
@@ -752,38 +1347,61 @@ window.saveN=(id)=>{
     tags:document.getElementById('fk')?.value||'',
     slug:sl,
     views:id?(DB.news.find(n=>n.id===id)||{}).views||0:0,
-    metaTitle:'',metaDesc:'',
+    metaTitle:document.getElementById('fmt')?.value||'',
+    metaDesc:document.getElementById('fmd')?.value||'',
   };
+  // Save to Firestore if logged in
+  if(window._fb && window._fbUser){
+    try{
+      const fbId = existingNews?._fbId || 'news_'+obj.id;
+      await window._fb.setDoc(window._fb.doc(window._fb.db,'news',fbId), {...obj, _fbId:fbId});
+      obj._fbId = fbId;
+      toast(id?'خبر اپ ڈیٹ ہو گئی ✓ (Firebase)':'خبر شائع ہو گئی ✓ (Firebase)');
+    }catch(e){
+      toast('Firebase error — مقامی طور پر محفوظ ✓');
+    }
+  } else {
+    toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');
+  }
   if(id){const i=DB.news.findIndex(n=>n.id===id);if(i>=0)DB.news[i]=obj}
   else DB.news.unshift(obj);
-  saveDB();S.editN=null;S.admPg='news';
-  toast(id?'خبر اپ ڈیٹ ✓':'خبر شائع ✓');render()
+  saveDB();S.editN=null;S.admPg='news';render()
 }
-window.delN=(id)=>{if(confirm('حذف کریں؟')){DB.news=DB.news.filter(n=>n.id!==id);saveDB();toast('حذف ✓');render()}}
+window.delN=async(id)=>{
+  if(confirm('یہ خبر مستقل حذف کریں؟')){
+    const n=DB.news.find(x=>x.id===id);
+    if(window._fb && window._fbUser && n?._fbId){
+      try{await window._fb.deleteDoc(window._fb.doc(window._fb.db,'news',n._fbId));}catch(e){}
+    }
+    DB.news=DB.news.filter(n=>n.id!==id);saveDB();toast('خبر حذف ہو گئی');render()
+  }
+}
 
 window.saveCat=()=>{
   const name=document.getElementById('cn')?.value?.trim()||'';
   const slug=document.getElementById('cs')?.value?.trim()||'';
   const color=document.getElementById('cc')?.value||'#2db844';
   const icon=document.getElementById('ci')?.value||'📰';
-  if(!name||!slug){toast('نام اور slug ضروری');return}
-  if(S.editC){const i=DB.categories.findIndex(c=>c.id===S.editC.id);if(i>=0)DB.categories[i]={...DB.categories[i],name,slug,color,icon}}
-  else DB.categories.push({id:Date.now(),name,slug,color,icon});
+  if(!name||!slug){toast('نام اور slug ضروری ہیں');return}
+  if(S.editC){
+    const i=DB.categories.findIndex(c=>c.id===S.editC.id);
+    if(i>=0)DB.categories[i]={...DB.categories[i],name,slug,color,icon}
+  }else{DB.categories.push({id:Date.now(),name,slug,color,icon})}
   saveDB();S.editC=null;toast('زمرہ محفوظ ✓');render()
 }
 window.editCat=(id)=>{S.editC=DB.categories.find(c=>c.id===id)||null;render()}
-window.delCat=(id)=>{if(confirm('حذف؟')){DB.categories=DB.categories.filter(c=>c.id!==id);saveDB();toast('حذف ✓');render()}}
+window.delCat=(id)=>{if(confirm('زمرہ حذف کریں؟')){DB.categories=DB.categories.filter(c=>c.id!==id);saveDB();toast('زمرہ حذف ✓');render()}}
 
 window.saveAuth=()=>{
   const name=document.getElementById('an')?.value?.trim()||'';
-  if(!name){toast('نام ضروری');return}
+  if(!name){toast('نام ضروری ہے');return}
   const obj={name,email:document.getElementById('ae')?.value||'',bio:document.getElementById('ab')?.value||''};
   if(S.editA){const i=DB.authors.findIndex(a=>a.id===S.editA.id);if(i>=0)DB.authors[i]={...DB.authors[i],...obj}}
   else DB.authors.push({id:Date.now(),...obj});
   saveDB();S.editA=null;toast('مصنف محفوظ ✓');render()
 }
 window.editAuth=(id)=>{S.editA=DB.authors.find(a=>a.id===id)||null;render()}
-window.delAuth=(id)=>{if(confirm('حذف؟')){DB.authors=DB.authors.filter(a=>a.id!==id);saveDB();toast('حذف ✓');render()}}
+window.delAuth=(id)=>{if(confirm('مصنف حذف کریں؟')){DB.authors=DB.authors.filter(a=>a.id!==id);saveDB();toast('مصنف حذف ✓');render()}}
 
 window.saveSett=()=>{
   DB.settings.siteName=document.getElementById('sn')?.value||DB.settings.siteName;
@@ -819,9 +1437,11 @@ window.savePrayer=()=>{
 
 window.refreshPrayer=async()=>{
   toast('API سے اوقات لیے جا رہے ہیں...');
-  DB.prayer.lastUpdated='';saveDB();
+  DB.prayer.lastUpdated='';
+  saveDB();
   await fetchPrayerTimes();
-  toast('نماز اوقات تازہ ✓');render()
+  toast('نماز اوقات تازہ ہو گئے ✓');
+  render()
 }
 
 window.saveSocial=()=>{
@@ -829,87 +1449,111 @@ window.saveSocial=()=>{
   DB.settings.twUrl=document.getElementById('stw')?.value||DB.settings.twUrl;
   DB.settings.waUrl=document.getElementById('swa')?.value||DB.settings.waUrl;
   DB.settings.igUrl=document.getElementById('sig')?.value||DB.settings.igUrl;
-  saveDB();toast('سوشل میڈیا محفوظ ✓');render()
+  saveDB();toast('سوشل میڈیا لنکس محفوظ ✓');render()
 }
 
-window.saveAds=()=>{DB.settings.adsenseId=document.getElementById('aid')?.value||'';saveDB();toast('AdSense محفوظ ✓')}
+window.saveAds=()=>{
+  DB.settings.adsenseId=document.getElementById('aid')?.value||'';
+  saveDB();toast('AdSense محفوظ ✓')
+}
 
 window.changePass=()=>{
   const old=document.getElementById('pold')?.value||'';
   const nw=document.getElementById('pnew')?.value||'';
   const nw2=document.getElementById('pnew2')?.value||'';
   const err=document.getElementById('perr');
-  if(old!==PASS){if(err)err.textContent='موجودہ پاس ورڈ غلط';return}
-  if(nw.length<6){if(err)err.textContent='کم از کم 6 حروف';return}
-  if(nw!==nw2){if(err)err.textContent='پاس ورڈ مماثل نہیں';return}
-  PASS=nw;savePass(nw);if(err)err.textContent='';
-  toast('پاس ورڈ بدل گیا ✓');
+  if(old!==PASS){if(err)err.textContent='موجودہ پاس ورڈ غلط ہے';return}
+  if(nw.length<6){if(err)err.textContent='نیا پاس ورڈ کم از کم 6 حروف کا ہو';return}
+  if(nw!==nw2){if(err)err.textContent='نئے پاس ورڈ مماثل نہیں';return}
+  PASS=nw;savePass(nw);
+  if(err)err.textContent='';
+  toast('پاس ورڈ کامیابی سے بدل گیا ✓');
+  document.getElementById('pold').value='';
+  document.getElementById('pnew').value='';
+  document.getElementById('pnew2').value='';
 }
 
 window.toast=toast;
 
-// Cloudinary Upload
-const CLD_CLOUD='dq2fbsi1s';
-const CLD_PRESET='pakistan_nama';
-window.uploadToCloudinary=async function(input){
-  const file=input.files[0];if(!file)return;
-  const status=document.getElementById('cld-status');
-  const preview=document.getElementById('cld-preview');
-  const fi=document.getElementById('fi');
-  if(status)status.textContent='⏳ upload ہو رہی ہے...';
-  const fd=new FormData();fd.append('file',file);fd.append('upload_preset',CLD_PRESET);
+// ======================================================
+// CLOUDINARY IMAGE UPLOAD
+// ======================================================
+const CLD_CLOUD = 'dq2fbsi1s';
+const CLD_PRESET = 'pakistan_nama';
+
+window.uploadToCloudinary = async function(input){
+  const file = input.files[0];
+  if(!file) return;
+  const status = document.getElementById('cld-status');
+  const preview = document.getElementById('cld-preview');
+  const fiInput = document.getElementById('fi');
+  if(status) status.textContent = '⏳ تصویر upload ہو رہی ہے...';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLD_PRESET);
   try{
-    const res=await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`,{method:'POST',body:fd});
-    const data=await res.json();
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`, {method:'POST', body:fd});
+    const data = await res.json();
     if(data.secure_url){
-      fi.value=data.secure_url;
-      if(preview){preview.style.display='block';preview.innerHTML=`<img src="${data.secure_url}" style="max-height:120px;border-radius:6px;border:1px solid #ddd">`;}
-      if(status){status.style.color='#2db844';status.textContent='✅ upload ہو گئی!';}
-      toast('تصویر upload ✓');
-    }else{if(status){status.style.color='#c0392b';status.textContent='❌ '+(data.error?.message||'ناکام');}}
-  }catch(e){if(status){status.style.color='#c0392b';status.textContent='❌ Network error';}}
+      fiInput.value = data.secure_url;
+      if(preview){ preview.style.display='block'; preview.innerHTML=`<img src="${data.secure_url}" style="max-height:120px;border-radius:6px;border:1px solid #ddd">`; }
+      if(status){ status.style.color='#2db844'; status.textContent='✅ تصویر کامیابی سے upload ہو گئی!'; }
+      toast('تصویر upload ہو گئی ✓');
+    } else {
+      if(status){ status.style.color='#c0392b'; status.textContent='❌ Error: '+(data.error?.message||'Upload ناکام'); }
+    }
+  } catch(e){
+    if(status){ status.style.color='#c0392b'; status.textContent='❌ Network error — دوبارہ کوشش کریں'; }
+  }
   input.value='';
 };
 
-// =====================================================
-// FIX 4: buildShareLink — Clean URL, no base64
-// Sirf #/news/slug — short aur shareable
-// =====================================================
+// ======================================================
+// SHAREABLE LINK HELPERS
+// ======================================================
 function buildShareLink(n){
-  if(!n)return location.href.split('#')[0];
-  var slug=n.slug&&n.slug.length>2?n.slug:('khabar-'+n.id);
-  var base=location.href.split('#')[0].split('?')[0];
-  return base+'#/news/'+slug;
+  if(!n) return location.href.split('#')[0];
+  const base=location.href.split('#')[0].split('?')[0];
+  // Clean short link — just slug, no encoded data
+  return base+'#/news/'+encodeURIComponent(n.slug);
 }
 
-window.copyShareLink=function(id){
-  const n=DB.news.find(x=>x.id===id);if(!n)return;
-  const link=buildShareLink(n);
-  if(navigator.clipboard&&window.isSecureContext){
-    navigator.clipboard.writeText(link).then(()=>toast('لنک کاپی ✓ — paste کریں')).catch(()=>fallbackCopy(link));
-  }else{fallbackCopy(link);}
-}
-function fallbackCopy(text){
-  const ta=document.createElement('textarea');
-  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.focus();ta.select();
-  try{document.execCommand('copy');toast('لنک کاپی ✓');}catch(e){toast('لنک: '+text,8000);}
-  document.body.removeChild(ta);
-}
-
-// =====================================================
-// FIX 5: handleRoute — hash se article/category load
-// =====================================================
-function handleRoute(){
+async function handleRoute(){
   const hash=location.hash;
+
+  // Remove old ?nd= encoded data support (no longer needed)
+  if(location.search.includes('nd=')){
+    // Clean URL
+    history.replaceState(null,'',location.pathname+location.hash);
+  }
+
   if(!hash||hash==='#/'||hash==='#'){S.viewN=null;S.catF=null;S.staticPg=null;return}
 
   // #/news/slug
   const newsMatch=hash.match(/^#\/news\/([^?&#]+)/);
   if(newsMatch){
     const slug=decodeURIComponent(newsMatch[1]);
-    const n=DB.news.find(x=>x.slug===slug);
-    if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;}
+    // First check local DB
+    let n=DB.news.find(x=>x.slug===slug);
+    if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;render();return;}
+    // Not in local — try Firestore
+    if(window._fb){
+      try{
+        const q=window._fb.query(window._fb.collection(window._fb.db,'news'));
+        const snap=await window._fb.getDocs(q);
+        snap.forEach(d=>{
+          const data=d.data();
+          if(data.slug===slug){
+            const newsObj={...data,_fbId:d.id,id:data.id||d.id};
+            if(!DB.news.find(x=>x.slug===slug)){DB.news.unshift(newsObj);saveDB();}
+            n=newsObj;
+          }
+        });
+        if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;render();return;}
+      }catch(e){}
+    }
+    // Still not found — show not found
+    S.viewN='notfound';S.catF=null;S.staticPg=null;render();
     return;
   }
   // #/cat/slug
@@ -924,9 +1568,36 @@ function handleRoute(){
   if(pgMatch){S.staticPg=pgMatch[1];S.viewN=null;S.catF=null;}
 }
 
-window.addEventListener('hashchange',()=>{handleRoute();render();window.scrollTo(0,0)});
-handleRoute();
+// ======================================================
+// COPY SHARE LINK — works on all browsers including mobile
+// ======================================================
+window.copyShareLink=function(id){
+  const n=DB.news.find(x=>x.id===id);
+  if(!n)return;
+  const link=buildShareLink(n);
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(link).then(()=>toast('لنک کاپی ہو گیا ✓ — کہیں بھی paste کریں')).catch(()=>fallbackCopy(link));
+  }else{
+    fallbackCopy(link);
+  }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');toast('لنک کاپی ہو گیا ✓');}catch(e){toast('لنک: '+text,6000);}
+  document.body.removeChild(ta);
+}
+
+window.addEventListener('hashchange',()=>{handleRoute();window.scrollTo(0,0)});
+
+// ======================================================
+// BOOT
+// ======================================================
 render();
+window.dispatchEvent(new Event('_appReady'));
+// Handle initial route after Firebase loads news
+setTimeout(()=>handleRoute(), 1800);
 </script>
 </body>
 </html>
