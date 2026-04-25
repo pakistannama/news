@@ -16,17 +16,18 @@
 // ======================================================
 // JSONBIN CONFIG
 // ======================================================
-const JBIN_KEY = '$2a$10$B722j8atgYbMg27p7UUEsebqTRu.bNdDM4ud7XfrEt0tDLMwxcMn2';
-const JBIN_ID  = '69ed10aa36566621a8ef6ecf';
-const JBIN_URL = `https://api.jsonbin.io/v3/b/${JBIN_ID}`;
+const JBIN_MASTER = '$2a$10$B722j8atgYbMg27p7UUEsebqTRu.bNdDM4ud7XfrEt0tDLMwxcMn2';
+const JBIN_READ   = '$2a$10$wXQOhVtV5srOd8VysCmz9uwH4NMELOvr.ACEUNwAPtyrJOf3t9YIe';
+const JBIN_ID     = '69ed10aa36566621a8ef6ecf';
+const JBIN_URL    = `https://api.jsonbin.io/v3/b/${JBIN_ID}`;
 
 window._jbinReady = false;
 
-// Load news from JSONBin
+// Load news from JSONBin (uses read-only key)
 async function loadFromJBin(){
   try{
     const res = await fetch(JBIN_URL+'/latest', {
-      headers:{'X-Master-Key': JBIN_KEY, 'X-Bin-Meta': 'false'}
+      headers:{'X-Access-Key': JBIN_READ, 'X-Bin-Meta': 'false'}
     });
     const data = await res.json();
     if(data && Array.isArray(data.news) && data.news.length > 0){
@@ -39,12 +40,12 @@ async function loadFromJBin(){
   }catch(e){ window._jbinReady = true; }
 }
 
-// Save all news to JSONBin
+// Save all news to JSONBin (uses master key)
 window._saveToJBin = async function(){
   try{
     await fetch(JBIN_URL, {
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key': JBIN_KEY},
+      headers:{'Content-Type':'application/json','X-Master-Key': JBIN_MASTER},
       body: JSON.stringify({news: DB.news})
     });
   }catch(e){ console.log('JBin save error',e); }
