@@ -11,71 +11,46 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+<!-- JSONBin Database -->
+<script>
+// ======================================================
+// JSONBIN CONFIG
+// ======================================================
+const JBIN_KEY = '$2a$10$B722j8atgYbMg27p7UUEsebqTRu.bNdDM4ud7XfrEt0tDLMwxcMn2';
+const JBIN_ID  = '69ed10aa36566621a8ef6ecf';
+const JBIN_URL = `https://api.jsonbin.io/v3/b/${JBIN_ID}`;
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAQuxBz9ewCCib0XZNNp3TCAg8wce49GIw",
-  authDomain: "pakistan-namaa.firebaseapp.com",
-  projectId: "pakistan-namaa",
-  storageBucket: "pakistan-namaa.firebasestorage.app",
-  messagingSenderId: "449872920397",
-  appId: "1:449872920397:web:9ba8cd0c1a6d1020468104",
-  measurementId: "G-XZENCR5CWY"
-};
+window._jbinReady = false;
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// ---- Expose Firebase functions globally ----
-window._fb = { db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, onSnapshot, signInWithEmailAndPassword, onAuthStateChanged, signOut };
-
-// ---- Auth state listener ----
-onAuthStateChanged(auth, (user) => {
-  window._fbUser = user || null;
-});
-
-// ---- Load news from Firestore on startup ----
-async function loadNewsFromFirestore() {
-  try {
-    const q = query(collection(db, 'news'), orderBy('date', 'desc'));
-    const snap = await getDocs(q);
-    const fbNews = [];
-    snap.forEach(d => fbNews.push({...d.data(), _fbId: d.id}));
-    if (fbNews.length > 0) {
-      // Map Firestore data to local DB format
-      window._fbNewsLoaded = fbNews;
-      // Merge into DB — Firestore is source of truth for news
-      DB.news = fbNews.map(n => ({
-        id: n.id || n._fbId,
-        title: n.title || '',
-        body: n.body || '',
-        catId: n.catId || 1,
-        author: n.author || 1,
-        date: n.date || new Date().toISOString().split('T')[0],
-        featured: n.featured || false,
-        image: n.image || '',
-        tags: n.tags || '',
-        slug: n.slug || '',
-        views: n.views || 0,
-        metaTitle: n.metaTitle || '',
-        metaDesc: n.metaDesc || '',
-        _fbId: n._fbId
-      }));
-      S.nid = DB.news.reduce((mx,n)=>Math.max(mx, typeof n.id === 'number' ? n.id : 0), 0) + 1;
+// Load news from JSONBin
+async function loadFromJBin(){
+  try{
+    const res = await fetch(JBIN_URL+'/latest', {
+      headers:{'X-Master-Key': JBIN_KEY, 'X-Bin-Meta': 'false'}
+    });
+    const data = await res.json();
+    if(data && Array.isArray(data.news) && data.news.length > 0){
+      DB.news = data.news;
+      S.nid = DB.news.reduce((mx,n)=>Math.max(mx, typeof n.id==='number'?n.id:0),0)+1;
+      saveDB();
       render();
     }
-  } catch(e) {
-    console.log('Firestore load error:', e);
-  }
+    window._jbinReady = true;
+  }catch(e){ window._jbinReady = true; }
 }
 
-// Run after page loads
-window.addEventListener('_appReady', loadNewsFromFirestore);
+// Save all news to JSONBin
+window._saveToJBin = async function(){
+  try{
+    await fetch(JBIN_URL, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key': JBIN_KEY},
+      body: JSON.stringify({news: DB.news})
+    });
+  }catch(e){ console.log('JBin save error',e); }
+};
+
+window.addEventListener('load', loadFromJBin);
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -958,7 +933,6 @@ function rLogin(){return`<div class="login-sc">
 <div class="login-card">
 <div class="login-logo">پاکستان نامہ</div>
 <div class="login-sub">Admin Panel — Secure Login</div>
-<div class="fg"><label>Email</label><input class="fc" id="lemail" value="ashich943@gmail.com" type="email" placeholder="admin@email.com" style="direction:ltr"></div>
 <div class="fg"><label>Password</label><input class="fc" id="pw" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
 <button class="btn-p" style="width:100%;margin-top:6px;padding:11px" onclick="doLogin()">Login →</button>
 <div id="lerr" style="color:#c0392b;font-size:12px;text-align:center;margin-top:8px;min-height:18px"></div>
@@ -1282,27 +1256,11 @@ document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='A'){e
 window.openStatic=(pg)=>{S.staticPg=pg;S.viewN=null;S.catF=null;S.srch='';render();window.scrollTo(0,0)}
 window.viewNAdmin=(id)=>{S.adm=false;viewN(id)}
 
-window.doLogin=async()=>{
+window.doLogin=()=>{
   const pw=document.getElementById('pw')?.value||'';
-  const emailInput=document.getElementById('lemail')?.value||'ashich943@gmail.com';
   const errEl=document.getElementById('lerr');
-  // Try Firebase Auth first
-  if(window._fb){
-    try{
-      if(errEl)errEl.textContent='⏳ لاگ ان ہو رہے ہیں...';
-      await window._fb.signInWithEmailAndPassword(window._fb.auth, emailInput, pw);
-      window._fbUser = window._fb.auth.currentUser;
-      S.admIn=true;render();return;
-    }catch(e){
-      // Fallback to local password check
-      if(pw===PASS){S.admIn=true;render();return;}
-      if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں';
-      return;
-    }
-  }
-  // No Firebase — use local password
-  if(pw===PASS){S.admIn=true;render()}
-  else{if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں'}
+  if(pw===PASS){S.admIn=true;render();}
+  else{if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں';}
 }
 window.setPg=(p)=>{S.admPg=p;S.editN=null;S.editC=null;S.editA=null;render()}
 
@@ -1336,7 +1294,6 @@ window.saveN=async(id)=>{
   const b=document.getElementById('fb')?.value?.trim()||'';
   if(!t||!b){toast('عنوان اور مواد ضروری ہیں');return}
   const sl=document.getElementById('fsl')?.value?.trim()||slugify(t);
-  const existingNews = id ? DB.news.find(n=>n.id===id) : null;
   const obj={
     id:id||S.nid++,title:t,body:b,
     catId:parseInt(document.getElementById('fc')?.value||1),
@@ -1350,30 +1307,20 @@ window.saveN=async(id)=>{
     metaTitle:document.getElementById('fmt')?.value||'',
     metaDesc:document.getElementById('fmd')?.value||'',
   };
-  // Save to Firestore if logged in
-  if(window._fb && window._fbUser){
-    try{
-      const fbId = existingNews?._fbId || 'news_'+obj.id;
-      await window._fb.setDoc(window._fb.doc(window._fb.db,'news',fbId), {...obj, _fbId:fbId});
-      obj._fbId = fbId;
-      toast(id?'خبر اپ ڈیٹ ہو گئی ✓ (Firebase)':'خبر شائع ہو گئی ✓ (Firebase)');
-    }catch(e){
-      toast('Firebase error — مقامی طور پر محفوظ ✓');
-    }
-  } else {
-    toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');
-  }
   if(id){const i=DB.news.findIndex(n=>n.id===id);if(i>=0)DB.news[i]=obj}
   else DB.news.unshift(obj);
-  saveDB();S.editN=null;S.admPg='news';render()
+  saveDB();
+  toast(id?'محفوظ ہو رہی ہے...':'شائع ہو رہی ہے...');
+  await window._saveToJBin();
+  S.editN=null;S.admPg='news';
+  toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');render();
 }
 window.delN=async(id)=>{
   if(confirm('یہ خبر مستقل حذف کریں؟')){
-    const n=DB.news.find(x=>x.id===id);
-    if(window._fb && window._fbUser && n?._fbId){
-      try{await window._fb.deleteDoc(window._fb.doc(window._fb.db,'news',n._fbId));}catch(e){}
-    }
-    DB.news=DB.news.filter(n=>n.id!==id);saveDB();toast('خبر حذف ہو گئی');render()
+    DB.news=DB.news.filter(n=>n.id!==id);
+    saveDB();
+    await window._saveToJBin();
+    toast('خبر حذف ہو گئی');render();
   }
 }
 
@@ -1520,50 +1467,30 @@ function buildShareLink(n){
 
 async function handleRoute(){
   const hash=location.hash;
-
-  // Remove old ?nd= encoded data support (no longer needed)
   if(location.search.includes('nd=')){
-    // Clean URL
     history.replaceState(null,'',location.pathname+location.hash);
   }
-
   if(!hash||hash==='#/'||hash==='#'){S.viewN=null;S.catF=null;S.staticPg=null;return}
 
-  // #/news/slug
   const newsMatch=hash.match(/^#\/news\/([^?&#]+)/);
   if(newsMatch){
     const slug=decodeURIComponent(newsMatch[1]);
-    // First check local DB
-    let n=DB.news.find(x=>x.slug===slug);
+    const n=DB.news.find(x=>x.slug===slug);
     if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;render();return;}
-    // Not in local — try Firestore
-    if(window._fb){
-      try{
-        const q=window._fb.query(window._fb.collection(window._fb.db,'news'));
-        const snap=await window._fb.getDocs(q);
-        snap.forEach(d=>{
-          const data=d.data();
-          if(data.slug===slug){
-            const newsObj={...data,_fbId:d.id,id:data.id||d.id};
-            if(!DB.news.find(x=>x.slug===slug)){DB.news.unshift(newsObj);saveDB();}
-            n=newsObj;
-          }
-        });
-        if(n){S.viewN=n.id;S.catF=null;S.staticPg=null;render();return;}
-      }catch(e){}
-    }
-    // Still not found — show not found
-    S.viewN='notfound';S.catF=null;S.staticPg=null;render();
+    // Not found locally — wait for JSONBin load and try again
+    setTimeout(()=>{
+      const n2=DB.news.find(x=>x.slug===slug);
+      if(n2){S.viewN=n2.id;S.catF=null;S.staticPg=null;render();}
+      else{toast('خبر نہیں ملی — ہوم پیج پر جائیں');}
+    },2500);
     return;
   }
-  // #/cat/slug
   const catMatch=hash.match(/^#\/cat\/(.+)$/);
   if(catMatch){
     const c=DB.categories.find(x=>x.slug===catMatch[1]);
     if(c){S.catF=c.id;S.viewN=null;S.staticPg=null;}
     return;
   }
-  // #/page/name
   const pgMatch=hash.match(/^#\/page\/(.+)$/);
   if(pgMatch){S.staticPg=pgMatch[1];S.viewN=null;S.catF=null;}
 }
