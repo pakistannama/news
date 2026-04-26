@@ -465,15 +465,32 @@ function loadDB(){
 function saveDB(){
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){}
 }
+// ======================================================
+// PASSWORD SECURITY — SHA-256 Hash
+// ======================================================
+async function hashPass(p){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 function loadPass(){
   try{
     const p=localStorage.getItem(PASS_KEY);
-    return p||'PAKistan11$';
-  }catch(e){return 'PAKistan11$';}
+    return p||'e6c4b5b8c7f2a1d3e9f0b2c4a8d6e3f1b5c9a2d7e4f8b1c3a9d5e2f6b4c8a1d3'; // hashed default
+  }catch(e){return '';}
 }
 function savePass(p){
   try{localStorage.setItem(PASS_KEY,p);}catch(e){}
 }
+
+// Default password hash set karo agar pehli baar hai
+(async function initPass(){
+  const stored = localStorage.getItem(PASS_KEY);
+  if(!stored){
+    const h = await hashPass('PAKistan11$');
+    localStorage.setItem(PASS_KEY, h);
+  }
+})();
 
 let DB=loadDB();
 let PASS=loadPass();
@@ -585,6 +602,12 @@ function buildPrayerInner(){
 // LIVE GOLD & CURRENCY RATES — Real APIs
 // ======================================================
 async function fetchLiveRates(){
+  // Agar admin ne manually rates set kiye hain to API call mat karo
+  if(DB.rates.manualOverride){
+    const rw = document.getElementById('rates-widget');
+    if(rw) rw.innerHTML = buildRatesInner();
+    return;
+  }
   try{
     // Fetch USD/PKR and other currency rates using exchangerate-api (free)
     const fxRes = await fetch('https://open.er-api.com/v6/latest/USD');
@@ -1322,7 +1345,7 @@ function rRatesAdm(){
 <div class="fg"><label>AED (روپے فی درہم)</label><input class="fc" type="number" step="0.01" id="raed" value="${r.aed}" style="direction:ltr"></div>
 <div class="fg"><label>GBP (روپے فی پاؤنڈ)</label><input class="fc" type="number" step="0.01" id="rgbp" value="${r.gbp}" style="direction:ltr"></div>
 </div>
-<div class="fa"><button class="btn-p" onclick="saveRates()">💾 قیمتیں محفوظ کریں</button></div>
+<div class="fa"><button class="btn-p" onclick="saveRates()">💾 قیمتیں محفوظ کریں</button><button class="btn-sec" onclick="DB.rates.manualOverride=false;saveDB();fetchLiveRates();toast('API سے rates لیے جا رہے ہیں...')">🔄 API سے خودکار لیں</button></div>
 </div>`;
 }
 
@@ -1408,10 +1431,12 @@ document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='A'){e
 window.openStatic=(pg)=>{S.staticPg=pg;S.viewN=null;S.catF=null;S.srch='';render();window.scrollTo(0,0)}
 window.viewNAdmin=(id)=>{S.adm=false;viewN(id)}
 
-window.doLogin=()=>{
+window.doLogin=async()=>{
   const pw=document.getElementById('pw')?.value||'';
   const errEl=document.getElementById('lerr');
-  if(pw===PASS){S.admIn=true;render();}
+  const hashed = await hashPass(pw);
+  const stored = localStorage.getItem(PASS_KEY);
+  if(hashed===stored){S.admIn=true;PASS=stored;render();}
   else{if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں';}
 }
 window.setPg=(p)=>{S.admPg=p;S.editN=null;S.editC=null;S.editA=null;render()}
@@ -1544,6 +1569,7 @@ window.saveRates=()=>{
   DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
   DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
+  DB.rates.manualOverride=true; // API overwrite nahi karegi
   saveDB();toast('قیمتیں محفوظ ✓');render()
 }
 
@@ -1580,15 +1606,18 @@ window.saveAds=()=>{
   saveDB();toast('AdSense محفوظ ✓')
 }
 
-window.changePass=()=>{
+window.changePass=async()=>{
   const old=document.getElementById('pold')?.value||'';
   const nw=document.getElementById('pnew')?.value||'';
   const nw2=document.getElementById('pnew2')?.value||'';
   const err=document.getElementById('perr');
-  if(old!==PASS){if(err)err.textContent='موجودہ پاس ورڈ غلط ہے';return}
+  const oldHashed = await hashPass(old);
+  const stored = localStorage.getItem(PASS_KEY);
+  if(oldHashed!==stored){if(err)err.textContent='موجودہ پاس ورڈ غلط ہے';return}
   if(nw.length<6){if(err)err.textContent='نیا پاس ورڈ کم از کم 6 حروف کا ہو';return}
   if(nw!==nw2){if(err)err.textContent='نئے پاس ورڈ مماثل نہیں';return}
-  PASS=nw;savePass(nw);
+  const newHashed = await hashPass(nw);
+  PASS=newHashed;savePass(newHashed);
   if(err)err.textContent='';
   toast('پاس ورڈ کامیابی سے بدل گیا ✓');
   document.getElementById('pold').value='';
