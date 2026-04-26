@@ -30,19 +30,19 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyY5rNBdz_ToUWUpOcvulobkBZUWXci0NFzDKkJKPPAtKnVWgpKXdRbulHPQnGmDIpxMw/exec';
 
 // Load news from Google Sheet
+// Load news from Google Sheet
 async function loadFromGAS(){
-  // BUG1 FIX: Incognito mein localStorage nahi hoti — loading screen dikhao
+  // Incognito mein localStorage nahi — loading screen dikhao
   if(DB.news.length === 0){
     const app=document.getElementById('app');
     if(app) app.innerHTML=`<div style="direction:rtl;min-height:100vh;background:#f2f4f2;display:flex;flex-direction:column">
-      <div style="background:linear-gradient(160deg,#041a08,#0a4a1a,#0c3a16);color:#fff;padding:18px;text-align:center">
+      <div style="background:linear-gradient(160deg,#041a08,#0a4a1a);color:#fff;padding:18px;text-align:center">
         <div style="font-family:'Noto Nastaliq Urdu',serif;font-size:32px;font-weight:700">پاکستان نامہ</div>
         <div style="height:3px;width:80px;background:linear-gradient(90deg,transparent,#c9a84c,transparent);margin:8px auto 0"></div>
       </div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:60px 20px">
         <div style="width:50px;height:50px;border:4px solid #e0e0e0;border-top-color:#1a7a2a;border-radius:50%;animation:pnspin .8s linear infinite"></div>
-        <p style="font-family:'Noto Nastaliq Urdu',serif;font-size:18px;color:#555">خبریں لوڈ ہو رہی ہیں، ایک لمحہ...</p>
-        <p style="font-family:'Noto Sans Arabic',sans-serif;font-size:12px;color:#999">پہلی بار لوڈ میں چند سیکنڈ لگ سکتے ہیں</p>
+        <p style="font-family:'Noto Nastaliq Urdu',serif;font-size:18px;color:#555">خبریں لوڈ ہو رہی ہیں...</p>
       </div>
       <style>@keyframes pnspin{to{transform:rotate(360deg)}}</style>
     </div>`;
@@ -59,7 +59,8 @@ async function loadFromGAS(){
         catId: parseInt(r.catId)||1,
         author: parseInt(r.author)||1,
         date: r.date||'',
-        featured: r.featured==='true'||r.featured===true,
+        // FEATURED FIX: Google Sheet mein string "true" aata hai — sahi parse karo
+        featured: r.featured==='true' || r.featured===true || r.featured==='TRUE' || r.featured==='1',
         image: r.image||'',
         tags: r.tags||'',
         views: parseInt(r.views)||0,
@@ -68,7 +69,6 @@ async function loadFromGAS(){
       }));
       S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
     }
-    // Authors — only update if GAS actually returns them
     if(data && Array.isArray(data.authors) && data.authors.length > 0){
       DB.authors = data.authors.map(r=>({
         id: parseInt(r.id)||Date.now(),
@@ -77,8 +77,6 @@ async function loadFromGAS(){
         bio: r.bio||''
       })).filter(a=>a.name);
     }
-    // Categories — ONLY update if GAS returns valid named categories
-    // Never wipe existing categories if GAS doesn't have them
     if(data && Array.isArray(data.categories) && data.categories.length > 0){
       const parsed = data.categories.map(r=>({
         id: parseInt(r.id||r.ID||r.Id)||Date.now(),
@@ -87,16 +85,25 @@ async function loadFromGAS(){
         color: (r.color||r.Color||'#2db844').toString().trim(),
         icon: (r.icon||r.Icon||r.emoji||'📰').toString().trim()
       })).filter(c=>c.name);
-      // Only replace if we got valid categories with names
       if(parsed.length > 0) DB.categories = parsed;
     }
-    // Breaking news — only update if available
     if(data && Array.isArray(data.breaking) && data.breaking.length > 0){
       DB.breaking = data.breaking;
     }
-    // PRAYER FIX: Agar GAS mein manual prayer saved hai to wahi load karo
+    // PRAYER FIX: Sirf tab load karo jab admin ne manually set kiya ho
     if(data && data.prayer && data.prayer.lastUpdated === 'manual'){
       DB.prayer = data.prayer;
+    }
+    // RATES FIX: GAS se manual rates load karo agar saved hain
+    if(data && data.rates){
+      const gr = data.rates;
+      if(gr.usd)     DB.rates.usd     = parseFloat(gr.usd);
+      if(gr.eur)     DB.rates.eur     = parseFloat(gr.eur);
+      if(gr.sar)     DB.rates.sar     = parseFloat(gr.sar);
+      if(gr.aed)     DB.rates.aed     = parseFloat(gr.aed);
+      if(gr.gbp)     DB.rates.gbp     = parseFloat(gr.gbp);
+      if(gr.gold24k) DB.rates.gold24k = parseInt(gr.gold24k);
+      if(gr.lastUpdated) DB.rates.lastUpdated = gr.lastUpdated;
     }
     saveDB();
     render();
@@ -610,6 +617,8 @@ function buildPrayerInner(){
 // LIVE GOLD & CURRENCY RATES — via GAS proxy (fixes CORS)
 // ======================================================
 async function fetchLiveRates(){
+  // Agar admin ne manually rates set ki hain to API override nahi karegi
+  if(DB.rates.manualOverride) return;
   try{
     const url=GAS_URL+'?action=rates';
     const r=await fetch(url);
@@ -654,8 +663,9 @@ function render(){
   if(S.adm&&!S.admIn){app.innerHTML=rLogin();return}
   if(S.adm){app.innerHTML=rAdmin();return}
   app.innerHTML=rSite();
+  // Rates: hamesha live fetch karo
   fetchLiveRates();
-  // PRAYER FIX: Sirf tab API se lo jab admin ne manually set NA kiya ho
+  // Prayer: sirf tab API se lo jab admin ne manually set NA kiya ho
   if(DB.prayer.lastUpdated !== 'manual'){
     fetchPrayerTimes();
   }
@@ -760,21 +770,23 @@ ${S.srch?`<button style="background:#999" onclick="S.srch='';S.staticPg=null;ren
 // HOME PAGE
 // ======================================================
 function rHome(){
-  const featured=DB.news.filter(n=>n.featured).slice(0,3);
-  const latest=[...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  // Featured: naye se purane sort, upar dikhao
+  const featured=[...DB.news].filter(n=>n.featured).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
+  // Latest: featured ko exclude karo + naye se purane
+  const latestNonFeatured=[...DB.news].filter(n=>!n.featured).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   const perPage=8;
-  const totalPages=Math.ceil(latest.length/perPage);
-  const paginated=latest.slice((S.artPage-1)*perPage,S.artPage*perPage);
+  const totalPages=Math.ceil(latestNonFeatured.length/perPage);
+  const paginated=latestNonFeatured.slice((S.artPage-1)*perPage,S.artPage*perPage);
   const cats4=DB.categories.slice(0,6);
 
   return`<div class="grid">
 <div>
 ${featured.length?`<div style="margin-bottom:28px">
-<div class="sec-ttl">⭐ نمایاں خبریں <a onclick="S.artPage=1;render()">تمام دیکھیں ←</a></div>
+<div class="sec-ttl">⭐ نمایاں خبریں <span style="font-size:12px;font-weight:400;color:var(--tm);font-family:var(--fi)">(${featured.length})</span></div>
 <div class="feat-grid">
-${rCard(featured[0],'main')}
-<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side')).join('')}</div>
+${rCard(featured[0],'main',true)}
+<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side',true)).join('')}</div>
 </div></div>`:''}
 
 <div style="margin-bottom:28px">
@@ -786,7 +798,8 @@ ${Array.from({length:totalPages},(_,i)=>`<button class="pg-btn ${S.artPage===i+1
 </div>
 
 ${cats4.map(cat=>{
-  const cn=DB.news.filter(n=>n.catId===cat.id).slice(0,3);
+  // Category mein naye se purane sort
+  const cn=[...DB.news].filter(n=>n.catId===cat.id).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
   return cn.length?`<div style="margin-bottom:28px">
 <div class="sec-ttl" style="border-color:${cat.color}">${cat.icon} ${cat.name} <a onclick="setCAT(${cat.id})">مزید ←</a></div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${cn.map(n=>rCard(n,'small')).join('')}</div>
@@ -839,12 +852,13 @@ ${DB.categories.map(c=>`<div onclick="setCAT(${c.id})" style="display:flex;justi
 // ======================================================
 // CARDS
 // ======================================================
-function rCard(n,sz){
+function rCard(n,sz,isFeatured){
   const cat=getCat(n.catId);
   const h=sz==='main'?'280px':sz==='small'?'155px':'145px';
   const ts=sz==='main'?'19px':'14px';
   return`<div class="ncard" onclick="viewN(${n.id})">
-<div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
+<div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40);position:relative">
+${isFeatured?`<div style="position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#c9a84c,#f5d78e);color:#7a4f00;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;font-family:var(--fi);z-index:2;box-shadow:0 2px 6px rgba(0,0,0,0.25)">⭐ نمایاں</div>`:''}
 ${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span class="placeholder">📰</span>`}
 </div>
 <div class="ncard-body">
@@ -1214,8 +1228,10 @@ function rAddNews(){
 </div>
 </div>
 <div class="fg"><label>URL Slug</label><input class="fc" id="fsl" value="${esc(n.slug)}" placeholder="news-title-here" style="direction:ltr;font-family:monospace"></div>
-<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-weight:600;letter-spacing:0">
-<input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:16px;height:16px"> نمایاں خبر کے طور پر نشان زد کریں
+<div class="fg"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;text-transform:none;font-weight:600;letter-spacing:0;background:#fffbea;border:2px solid #f5d78e;border-radius:var(--r);padding:12px 14px">
+<input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:20px;height:20px;accent-color:#c9a84c;flex-shrink:0">
+<div><div style="font-family:var(--fu);font-size:15px;color:#7a4f00">⭐ نمایاں خبریں میں شامل کریں</div>
+<div style="font-size:11px;color:#b8860b;font-family:var(--fi);margin-top:2px">Tick کریں تو Homepage پر سب سے اوپر featured section میں دکھے گی</div></div>
 </label></div>
 <div style="border-top:1px solid #eee;padding-top:16px;margin-top:6px">
 <p style="font-size:12px;font-weight:700;color:#666;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">🔍 SEO ترتیبات</p>
@@ -1556,7 +1572,7 @@ window.saveSett=()=>{
   saveDB();toast('ترتیبات محفوظ ✓');render()
 }
 
-window.saveRates=()=>{
+window.saveRates=async()=>{
   DB.rates.gold24k=parseFloat(document.getElementById('rgold')?.value)||DB.rates.gold24k;
   DB.rates.usd=parseFloat(document.getElementById('rusd')?.value)||DB.rates.usd;
   DB.rates.eur=parseFloat(document.getElementById('reur')?.value)||DB.rates.eur;
@@ -1564,29 +1580,32 @@ window.saveRates=()=>{
   DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
   DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
-  saveDB();toast('قیمتیں محفوظ ✓');render()
+  DB.rates.manualOverride=true; // flag: admin ne manually set kiya
+  saveDB();
+  // GAS mein bhi save karo — incognito/doosre browsers ke liye
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveRates',rates:DB.rates})});
+  }catch(e){}
+  toast('قیمتیں محفوظ ✓');render();
 }
 
 window.savePrayer=async()=>{
   DB.prayer={
-    city:  document.getElementById('pcity')?.value?.trim()   ||DB.prayer.city,
-    fajr:  document.getElementById('pfajr')?.value?.trim()   ||DB.prayer.fajr,
-    zuhr:  document.getElementById('pzuhr')?.value?.trim()   ||DB.prayer.zuhr,
-    asr:   document.getElementById('pasr')?.value?.trim()    ||DB.prayer.asr,
-    maghrib:document.getElementById('pmaghrib')?.value?.trim()||DB.prayer.maghrib,
-    isha:  document.getElementById('pisha')?.value?.trim()   ||DB.prayer.isha,
+    city:    document.getElementById('pcity')?.value?.trim()    ||DB.prayer.city,
+    fajr:    document.getElementById('pfajr')?.value?.trim()    ||DB.prayer.fajr,
+    zuhr:    document.getElementById('pzuhr')?.value?.trim()    ||DB.prayer.zuhr,
+    asr:     document.getElementById('pasr')?.value?.trim()     ||DB.prayer.asr,
+    maghrib: document.getElementById('pmaghrib')?.value?.trim() ||DB.prayer.maghrib,
+    isha:    document.getElementById('pisha')?.value?.trim()    ||DB.prayer.isha,
     lastUpdated:'manual'
   };
   saveDB();
   try{
-    await fetch(GAS_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'savePrayer',prayer:DB.prayer})
-    });
-  }catch(e){console.log('Prayer GAS save error',e);}
-  toast('نماز اوقات محفوظ ✓');
-  render();
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'savePrayer',prayer:DB.prayer})});
+  }catch(e){}
+  toast('نماز اوقات محفوظ ✓');render();
 }
 
 window.refreshPrayer=async()=>{
@@ -1595,7 +1614,7 @@ window.refreshPrayer=async()=>{
   saveDB();
   await fetchPrayerTimes();
   toast('نماز اوقات تازہ ہو گئے ✓');
-  render()
+  render();
 }
 
 window.saveSocial=()=>{
