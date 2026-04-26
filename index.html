@@ -27,10 +27,26 @@
 // ======================================================
 // GOOGLE APPS SCRIPT CONFIG — Unlimited Free!
 // ======================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzSxNJoiYcxNmUfrRdwz8Ngsg869HCwLDM3gdBS3Me7U3kLlvnAuNWUyMoZ-zreY_4AQg/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyY5rNBdz_ToUWUpOcvulobkBZUWXci0NFzDKkJKPPAtKnVWgpKXdRbulHPQnGmDIpxMw/exec';
 
 // Load news from Google Sheet
 async function loadFromGAS(){
+  // BUG1 FIX: Incognito mein localStorage nahi hoti — loading screen dikhao
+  if(DB.news.length === 0){
+    const app=document.getElementById('app');
+    if(app) app.innerHTML=`<div style="direction:rtl;min-height:100vh;background:#f2f4f2;display:flex;flex-direction:column">
+      <div style="background:linear-gradient(160deg,#041a08,#0a4a1a,#0c3a16);color:#fff;padding:18px;text-align:center">
+        <div style="font-family:'Noto Nastaliq Urdu',serif;font-size:32px;font-weight:700">پاکستان نامہ</div>
+        <div style="height:3px;width:80px;background:linear-gradient(90deg,transparent,#c9a84c,transparent);margin:8px auto 0"></div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:60px 20px">
+        <div style="width:50px;height:50px;border:4px solid #e0e0e0;border-top-color:#1a7a2a;border-radius:50%;animation:pnspin .8s linear infinite"></div>
+        <p style="font-family:'Noto Nastaliq Urdu',serif;font-size:18px;color:#555">خبریں لوڈ ہو رہی ہیں، ایک لمحہ...</p>
+        <p style="font-family:'Noto Sans Arabic',sans-serif;font-size:12px;color:#999">پہلی بار لوڈ میں چند سیکنڈ لگ سکتے ہیں</p>
+      </div>
+      <style>@keyframes pnspin{to{transform:rotate(360deg)}}</style>
+    </div>`;
+  }
   try{
     const res = await fetch(GAS_URL);
     const data = await res.json();
@@ -78,28 +94,9 @@ async function loadFromGAS(){
     if(data && Array.isArray(data.breaking) && data.breaking.length > 0){
       DB.breaking = data.breaking;
     }
-    // Prayer times — GAS meta sheet se (admin ne jo save kiya)
-    // Sirf valid time format accept karein jaise "5:30 ص" ya "5:30 AM"
-    if(data && data.prayer && Object.keys(data.prayer).length > 0){
-      const p = data.prayer;
-      const isValidTime = (s) => s && /^\d{1,2}:\d{2}/.test(s) && s.length < 15;
-      if(isValidTime(p.fajr)) DB.prayer.fajr = p.fajr;
-      if(isValidTime(p.zuhr)) DB.prayer.zuhr = p.zuhr;
-      if(isValidTime(p.asr)) DB.prayer.asr = p.asr;
-      if(isValidTime(p.maghrib)) DB.prayer.maghrib = p.maghrib;
-      if(isValidTime(p.isha)) DB.prayer.isha = p.isha;
-      if(p.city && p.city.length < 30) DB.prayer.city = p.city;
-    }
-    // Rates — GAS meta sheet se (admin ne jo save kiya)
-    if(data && data.rates && Object.keys(data.rates).length > 0){
-      const rt = data.rates;
-      if(rt.usd) DB.rates.usd = parseFloat(rt.usd);
-      if(rt.eur) DB.rates.eur = parseFloat(rt.eur);
-      if(rt.sar) DB.rates.sar = parseFloat(rt.sar);
-      if(rt.aed) DB.rates.aed = parseFloat(rt.aed);
-      if(rt.gbp) DB.rates.gbp = parseFloat(rt.gbp);
-      if(rt.gold24k) DB.rates.gold24k = parseInt(rt.gold24k);
-      if(rt.lastUpdated) DB.rates.lastUpdated = rt.lastUpdated;
+    // PRAYER FIX: Agar GAS mein manual prayer saved hai to wahi load karo
+    if(data && data.prayer && data.prayer.lastUpdated === 'manual'){
+      DB.prayer = data.prayer;
     }
     saveDB();
     render();
@@ -657,9 +654,11 @@ function render(){
   if(S.adm&&!S.admIn){app.innerHTML=rLogin();return}
   if(S.adm){app.innerHTML=rAdmin();return}
   app.innerHTML=rSite();
-  // API fetch disabled — admin se manually update hoga
-  // fetchPrayerTimes();
-  // fetchLiveRates();
+  fetchLiveRates();
+  // PRAYER FIX: Sirf tab API se lo jab admin ne manually set NA kiya ho
+  if(DB.prayer.lastUpdated !== 'manual'){
+    fetchPrayerTimes();
+  }
 }
 
 // ======================================================
@@ -1557,7 +1556,7 @@ window.saveSett=()=>{
   saveDB();toast('ترتیبات محفوظ ✓');render()
 }
 
-window.saveRates=async()=>{
+window.saveRates=()=>{
   DB.rates.gold24k=parseFloat(document.getElementById('rgold')?.value)||DB.rates.gold24k;
   DB.rates.usd=parseFloat(document.getElementById('rusd')?.value)||DB.rates.usd;
   DB.rates.eur=parseFloat(document.getElementById('reur')?.value)||DB.rates.eur;
@@ -1565,30 +1564,29 @@ window.saveRates=async()=>{
   DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
   DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
-  saveDB();
-  // GAS mein bhi save karein taake incognito mein bhi aaye
-  try{
-    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'syncMeta',rates:DB.rates})});
-  }catch(e){}
-  toast('قیمتیں محفوظ ✓');render()
+  saveDB();toast('قیمتیں محفوظ ✓');render()
 }
 
 window.savePrayer=async()=>{
-  DB.prayer.city=document.getElementById('pcity')?.value||DB.prayer.city;
-  DB.prayer.fajr=document.getElementById('pfajr')?.value||DB.prayer.fajr;
-  DB.prayer.zuhr=document.getElementById('pzuhr')?.value||DB.prayer.zuhr;
-  DB.prayer.asr=document.getElementById('pasr')?.value||DB.prayer.asr;
-  DB.prayer.maghrib=document.getElementById('pmaghrib')?.value||DB.prayer.maghrib;
-  DB.prayer.isha=document.getElementById('pisha')?.value||DB.prayer.isha;
-  DB.prayer.lastUpdated='manual';
+  DB.prayer={
+    city:  document.getElementById('pcity')?.value?.trim()   ||DB.prayer.city,
+    fajr:  document.getElementById('pfajr')?.value?.trim()   ||DB.prayer.fajr,
+    zuhr:  document.getElementById('pzuhr')?.value?.trim()   ||DB.prayer.zuhr,
+    asr:   document.getElementById('pasr')?.value?.trim()    ||DB.prayer.asr,
+    maghrib:document.getElementById('pmaghrib')?.value?.trim()||DB.prayer.maghrib,
+    isha:  document.getElementById('pisha')?.value?.trim()   ||DB.prayer.isha,
+    lastUpdated:'manual'
+  };
   saveDB();
-  // GAS mein bhi save karein taake incognito mein bhi aaye
   try{
-    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'syncMeta',prayer:DB.prayer})});
-  }catch(e){}
-  toast('نماز اوقات محفوظ ✓');render()
+    await fetch(GAS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'savePrayer',prayer:DB.prayer})
+    });
+  }catch(e){console.log('Prayer GAS save error',e);}
+  toast('نماز اوقات محفوظ ✓');
+  render();
 }
 
 window.refreshPrayer=async()=>{
