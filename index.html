@@ -45,7 +45,20 @@ async function loadFromGAS(){
       }));
     }
 
-    // ---- Load News from GAS ----
+    // ---- Load Rates from GAS ----
+    if(data && data.rates && Object.keys(data.rates).length > 0){
+      const r = data.rates;
+      DB.rates.gold24k = parseFloat(r.gold24k)||DB.rates.gold24k;
+      DB.rates.usd = parseFloat(r.usd)||DB.rates.usd;
+      DB.rates.eur = parseFloat(r.eur)||DB.rates.eur;
+      DB.rates.sar = parseFloat(r.sar)||DB.rates.sar;
+      DB.rates.aed = parseFloat(r.aed)||DB.rates.aed;
+      DB.rates.gbp = parseFloat(r.gbp)||DB.rates.gbp;
+      DB.rates.lastUpdated = r.lastUpdated||DB.rates.lastUpdated;
+      DB.rates.manualOverride = true;
+    }
+
+
     if(data && Array.isArray(data.news) && data.news.length > 0){
       DB.news = data.news.map(r=>({
         id: parseInt(r.id)||0,
@@ -1561,7 +1574,7 @@ window.saveSett=()=>{
   saveDB();toast('ترتیبات محفوظ ✓');render()
 }
 
-window.saveRates=()=>{
+window.saveRates=async()=>{
   DB.rates.gold24k=parseFloat(document.getElementById('rgold')?.value)||DB.rates.gold24k;
   DB.rates.usd=parseFloat(document.getElementById('rusd')?.value)||DB.rates.usd;
   DB.rates.eur=parseFloat(document.getElementById('reur')?.value)||DB.rates.eur;
@@ -1569,8 +1582,24 @@ window.saveRates=()=>{
   DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
   DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
-  DB.rates.manualOverride=true; // API overwrite nahi karegi
-  saveDB();toast('قیمتیں محفوظ ✓');render()
+  DB.rates.manualOverride=true;
+  saveDB();
+  toast('محفوظ ہو رہا ہے...');
+  // GAS Sheet mein bhi save karo
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveRates',data:{
+        gold24k:String(DB.rates.gold24k),
+        usd:String(DB.rates.usd),
+        eur:String(DB.rates.eur),
+        sar:String(DB.rates.sar),
+        aed:String(DB.rates.aed),
+        gbp:String(DB.rates.gbp),
+        lastUpdated:DB.rates.lastUpdated
+      }})
+    });
+  }catch(e){console.log('Rates GAS save error',e);}
+  toast('قیمتیں محفوظ ✓');render();
 }
 
 window.savePrayer=()=>{
