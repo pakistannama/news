@@ -11,47 +11,86 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- JSONBin Database -->
+<!-- SheetDB Database -->
 <script>
 // ======================================================
-// JSONBIN CONFIG
+// SHEETDB CONFIG
 // ======================================================
-const JBIN_MASTER = '$2a$10$B722j8atgYbMg27p7UUEsebqTRu.bNdDM4ud7XfrEt0tDLMwxcMn2';
-const JBIN_READ   = '$2a$10$wXQOhVtV5srOd8VysCmz9uwH4NMELOvr.ACEUNwAPtyrJOf3t9YIe';
-const JBIN_ID     = '69ed10aa36566621a8ef6ecf';
-const JBIN_URL    = `https://api.jsonbin.io/v3/b/${JBIN_ID}`;
+const SHEETDB_URL = 'https://sheetdb.io/api/v1/kt6cz72hlz6oh';
 
-window._jbinReady = false;
-
-// Load news from JSONBin (uses read-only key)
-async function loadFromJBin(){
+// Load news from SheetDB
+async function loadFromSheetDB(){
   try{
-    const res = await fetch(JBIN_URL+'/latest', {
-      headers:{'X-Access-Key': JBIN_READ, 'X-Bin-Meta': 'false'}
-    });
-    const data = await res.json();
-    if(data && Array.isArray(data.news) && data.news.length > 0){
-      DB.news = data.news;
-      S.nid = DB.news.reduce((mx,n)=>Math.max(mx, typeof n.id==='number'?n.id:0),0)+1;
+    const res = await fetch(SHEETDB_URL+'?sheet=news');
+    const rows = await res.json();
+    if(Array.isArray(rows) && rows.length > 0){
+      DB.news = rows.map(r=>({
+        id: parseInt(r.id)||0,
+        title: r.title||'',
+        body: r.body||'',
+        slug: r.slug||'',
+        catId: parseInt(r.catId)||1,
+        author: parseInt(r.author)||1,
+        date: r.date||'',
+        featured: r.featured==='true'||r.featured===true,
+        image: r.image||'',
+        tags: r.tags||'',
+        views: parseInt(r.views)||0,
+        metaTitle: r.metaTitle||'',
+        metaDesc: r.metaDesc||''
+      }));
+      S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
       saveDB();
       render();
+      // Handle route after news loaded
+      setTimeout(()=>handleRoute(),300);
     }
-    window._jbinReady = true;
-  }catch(e){ window._jbinReady = true; }
+  }catch(e){ console.log('SheetDB load error',e); }
 }
 
-// Save all news to JSONBin (uses master key)
-window._saveToJBin = async function(){
+// Save single news to SheetDB
+window._saveToSheetDB = async function(obj, isUpdate){
   try{
-    await fetch(JBIN_URL, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key': JBIN_MASTER},
-      body: JSON.stringify({news: DB.news})
-    });
-  }catch(e){ console.log('JBin save error',e); }
+    const row = {
+      id: String(obj.id),
+      title: obj.title,
+      body: obj.body,
+      slug: obj.slug,
+      catId: String(obj.catId),
+      author: String(obj.author),
+      date: obj.date,
+      featured: String(obj.featured),
+      image: obj.image||'',
+      tags: obj.tags||'',
+      views: String(obj.views||0),
+      metaTitle: obj.metaTitle||'',
+      metaDesc: obj.metaDesc||''
+    };
+    if(isUpdate){
+      await fetch(SHEETDB_URL+'/id/'+obj.id+'?sheet=news',{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({data: row})
+      });
+    } else {
+      await fetch(SHEETDB_URL+'?sheet=news',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({data: row})
+      });
+    }
+  }catch(e){ console.log('SheetDB save error',e); }
 };
 
-window.addEventListener('load', loadFromJBin);
+// Delete news from SheetDB
+window._deleteFromSheetDB = async function(id){
+  try{
+    await fetch(SHEETDB_URL+'/id/'+id+'?sheet=news',{method:'DELETE'});
+  }catch(e){}
+};
+
+window.addEventListener('load', loadFromSheetDB);
+</script>
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -1308,20 +1347,20 @@ window.saveN=async(id)=>{
     metaTitle:document.getElementById('fmt')?.value||'',
     metaDesc:document.getElementById('fmd')?.value||'',
   };
-  if(id){const i=DB.news.findIndex(n=>n.id===id);if(i>=0)DB.news[i]=obj}
+  if(id){const i=DB.news.findIndex(n=>n.id===id);if(i>=0)DB.news[i]=obj;}
   else DB.news.unshift(obj);
   saveDB();
-  toast(id?'محفوظ ہو رہی ہے...':'شائع ہو رہی ہے...');
-  await window._saveToJBin();
+  toast('محفوظ ہو رہی ہے...');
+  await window._saveToSheetDB(obj, !!id);
   S.editN=null;S.admPg='news';
-  toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');render();
+  toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');
+  render();
 }
 window.delN=async(id)=>{
   if(confirm('یہ خبر مستقل حذف کریں؟')){
+    await window._deleteFromSheetDB(id);
     DB.news=DB.news.filter(n=>n.id!==id);
-    saveDB();
-    await window._saveToJBin();
-    toast('خبر حذف ہو گئی');render();
+    saveDB();toast('خبر حذف ہو گئی');render();
   }
 }
 
