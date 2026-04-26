@@ -35,6 +35,17 @@ async function loadFromGAS(){
     const res = await fetch(GAS_URL);
     const data = await res.json();
 
+    // ---- Load Categories from GAS ----
+    if(data && Array.isArray(data.categories) && data.categories.length > 0){
+      DB.categories = data.categories.map(r=>({
+        id: parseInt(r.id)||0,
+        name: r.name||'',
+        slug: r.slug||'',
+        color: r.color||'#2db844',
+        icon: r.icon||'📰'
+      }));
+    }
+
     // ---- Load Authors from GAS ----
     if(data && Array.isArray(data.authors) && data.authors.length > 0){
       DB.authors = data.authors.map(r=>({
@@ -68,7 +79,7 @@ async function loadFromGAS(){
         catId: parseInt(r.catId)||1,
         author: parseInt(r.author)||1,
         date: r.date||'',
-        featured: r.featured==='true'||r.featured===true,
+        featured: r.featured==='true'||r.featured===true||r.featured==='TRUE',
         image: r.image||'',
         tags: r.tags||'',
         views: parseInt(r.views)||0,
@@ -128,7 +139,20 @@ window._deleteFromGAS = async function(id){
   }catch(e){}
 };
 
-window.addEventListener('load', loadFromGAS);
+window.addEventListener('load', ()=>{
+  // Loading indicator dikhao
+  const app = document.getElementById('app');
+  if(app && DB.news.length === 0){
+    app.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#f2f4f2;gap:16px">
+      <div style="font-size:48px">📰</div>
+      <div style="font-family:'Noto Nastaliq Urdu',serif;font-size:20px;color:#1a7a2a;font-weight:700">پاکستان نامہ</div>
+      <div style="font-family:'Noto Sans Arabic',sans-serif;font-size:13px;color:#888">خبریں لوڈ ہو رہی ہیں...</div>
+      <div style="width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#1a7a2a;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </div>`;
+  }
+  loadFromGAS();
+});
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -931,6 +955,10 @@ function rArticle(){
   const n=DB.news.find(x=>x.id===S.viewN);
   if(!n)return`<p style="text-align:center;padding:40px;font-family:var(--fu)">خبر نہیں ملی</p>`;
   n.views++;saveDB();
+  // Views GAS mein bhi update karo
+  fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'updateViews',id:String(n.id),views:String(n.views)})
+  }).catch(e=>console.log('Views update error',e));
   const cat=getCat(n.catId);
   const related=DB.news.filter(x=>x.catId===n.catId&&x.id!==n.id).slice(0,3);
   const shareLink=buildShareLink(n);
@@ -1514,20 +1542,43 @@ window.delN=async(id)=>{
   }
 }
 
-window.saveCat=()=>{
+window.saveCat=async()=>{
   const name=document.getElementById('cn')?.value?.trim()||'';
   const slug=document.getElementById('cs')?.value?.trim()||'';
   const color=document.getElementById('cc')?.value||'#2db844';
   const icon=document.getElementById('ci')?.value||'📰';
   if(!name||!slug){toast('نام اور slug ضروری ہیں');return}
+  let isUpdate=false;
+  let catId;
   if(S.editC){
     const i=DB.categories.findIndex(c=>c.id===S.editC.id);
-    if(i>=0)DB.categories[i]={...DB.categories[i],name,slug,color,icon}
-  }else{DB.categories.push({id:Date.now(),name,slug,color,icon})}
-  saveDB();S.editC=null;toast('زمرہ محفوظ ✓');render()
+    if(i>=0)DB.categories[i]={...DB.categories[i],name,slug,color,icon};
+    catId=S.editC.id;
+    isUpdate=true;
+  }else{
+    catId=Date.now();
+    DB.categories.push({id:catId,name,slug,color,icon});
+  }
+  saveDB();S.editC=null;toast('محفوظ ہو رہا ہے...');
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:isUpdate?'updateCat':'addCat',data:{id:String(catId),name,slug,color,icon}})
+    });
+  }catch(e){console.log('Cat GAS save error',e);}
+  toast('زمرہ محفوظ ✓');render();
 }
 window.editCat=(id)=>{S.editC=DB.categories.find(c=>c.id===id)||null;render()}
-window.delCat=(id)=>{if(confirm('زمرہ حذف کریں؟')){DB.categories=DB.categories.filter(c=>c.id!==id);saveDB();toast('زمرہ حذف ✓');render()}}
+window.delCat=async(id)=>{
+  if(confirm('زمرہ حذف کریں؟')){
+    DB.categories=DB.categories.filter(c=>c.id!==id);
+    saveDB();toast('زمرہ حذف ✓');render();
+    try{
+      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'deleteCat',id:String(id)})
+      });
+    }catch(e){}
+  }
+}
 
 window.saveAuth=async()=>{
   const name=document.getElementById('an')?.value?.trim()||'';
