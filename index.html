@@ -52,26 +52,29 @@ async function loadFromGAS(){
       }));
       S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
     }
-    // Load authors from GAS if available
+    // Authors — only update if GAS actually returns them
     if(data && Array.isArray(data.authors) && data.authors.length > 0){
       DB.authors = data.authors.map(r=>({
         id: parseInt(r.id)||Date.now(),
         name: r.name||'',
         email: r.email||'',
         bio: r.bio||''
-      }));
+      })).filter(a=>a.name);
     }
-    // Load categories from GAS if available
+    // Categories — ONLY update if GAS returns valid named categories
+    // Never wipe existing categories if GAS doesn't have them
     if(data && Array.isArray(data.categories) && data.categories.length > 0){
-      DB.categories = data.categories.map(r=>({
+      const parsed = data.categories.map(r=>({
         id: parseInt(r.id||r.ID||r.Id)||Date.now(),
-        name: (r.name||r.Name||r.NAME||r.اردو_نام||'').toString().trim(),
+        name: (r.name||r.Name||r.NAME||'').toString().trim(),
         slug: (r.slug||r.Slug||r.SLUG||'').toString().trim(),
         color: (r.color||r.Color||'#2db844').toString().trim(),
         icon: (r.icon||r.Icon||r.emoji||'📰').toString().trim()
-      })).filter(c=>c.name); // only keep categories that have a name
+      })).filter(c=>c.name);
+      // Only replace if we got valid categories with names
+      if(parsed.length > 0) DB.categories = parsed;
     }
-    // Load breaking news from GAS if available
+    // Breaking news — only update if available
     if(data && Array.isArray(data.breaking) && data.breaking.length > 0){
       DB.breaking = data.breaking;
     }
