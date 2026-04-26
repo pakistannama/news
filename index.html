@@ -760,24 +760,21 @@ ${S.srch?`<button style="background:#999" onclick="S.srch='';S.staticPg=null;ren
 // HOME PAGE
 // ======================================================
 function rHome(){
-  // Featured: naye se purane sort, upar dikhao
-  const featured=[...DB.news].filter(n=>n.featured).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
-  // Latest: featured ko EXCLUDE karo taake double na aye
+  const featured=DB.news.filter(n=>n.featured).slice(0,3);
   const latest=[...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const latestNonFeatured=latest.filter(n=>!n.featured);
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   const perPage=8;
-  const totalPages=Math.ceil(latestNonFeatured.length/perPage);
-  const paginated=latestNonFeatured.slice((S.artPage-1)*perPage,S.artPage*perPage);
+  const totalPages=Math.ceil(latest.length/perPage);
+  const paginated=latest.slice((S.artPage-1)*perPage,S.artPage*perPage);
   const cats4=DB.categories.slice(0,6);
 
   return`<div class="grid">
 <div>
 ${featured.length?`<div style="margin-bottom:28px">
-<div class="sec-ttl">⭐ نمایاں خبریں <span style="font-size:12px;font-weight:400;color:var(--tm);font-family:var(--fi)">(${featured.length} خبریں)</span></div>
+<div class="sec-ttl">⭐ نمایاں خبریں <a onclick="S.artPage=1;render()">تمام دیکھیں ←</a></div>
 <div class="feat-grid">
-${rCard(featured[0],'main',true)}
-<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side',true)).join('')}</div>
+${rCard(featured[0],'main')}
+<div class="feat-side">${featured.slice(1).map(n=>rCard(n,'side')).join('')}</div>
 </div></div>`:''}
 
 <div style="margin-bottom:28px">
@@ -842,13 +839,12 @@ ${DB.categories.map(c=>`<div onclick="setCAT(${c.id})" style="display:flex;justi
 // ======================================================
 // CARDS
 // ======================================================
-function rCard(n,sz,isFeatured){
+function rCard(n,sz){
   const cat=getCat(n.catId);
   const h=sz==='main'?'280px':sz==='small'?'155px':'145px';
   const ts=sz==='main'?'19px':'14px';
   return`<div class="ncard" onclick="viewN(${n.id})">
 <div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
-${isFeatured?`<div style="position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#c9a84c,#f5d78e);color:#7a4f00;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;font-family:var(--fi);z-index:2;box-shadow:0 2px 6px rgba(0,0,0,0.2)">⭐ نمایاں</div>`:''}
 ${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span class="placeholder">📰</span>`}
 </div>
 <div class="ncard-body">
@@ -1219,9 +1215,7 @@ function rAddNews(){
 </div>
 <div class="fg"><label>URL Slug</label><input class="fc" id="fsl" value="${esc(n.slug)}" placeholder="news-title-here" style="direction:ltr;font-family:monospace"></div>
 <div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-weight:600;letter-spacing:0">
-<input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:18px;height:18px;accent-color:var(--gm)"> 
-<span style="font-family:var(--fu);font-size:15px">⭐ نمایاں خبریں میں شامل کریں</span>
-<span style="font-size:11px;color:var(--tm);font-family:var(--fi)">(Homepage پر سب سے اوپر دکھے گی)</span>
+<input type="checkbox" id="ff" ${n.featured?'checked':''} style="width:16px;height:16px"> نمایاں خبر کے طور پر نشان زد کریں
 </label></div>
 <div style="border-top:1px solid #eee;padding-top:16px;margin-top:6px">
 <p style="font-size:12px;font-weight:700;color:#666;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">🔍 SEO ترتیبات</p>
