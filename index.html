@@ -11,20 +11,20 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- SheetDB Database -->
+<!-- Google Apps Script Database -->
 <script>
 // ======================================================
-// SHEETDB CONFIG
+// GOOGLE APPS SCRIPT CONFIG — Unlimited Free!
 // ======================================================
-const SHEETDB_URL = 'https://sheetdb.io/api/v1/kt6cz72hlz6oh';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwAoKed-vozo5X8oOOOl88AtfwAPjc7ZiUrkijvuPayavWGQTuGznM6Xqal1Lc67t8V5A/exec';
 
-// Load news from SheetDB
-async function loadFromSheetDB(){
+// Load news from Google Sheet
+async function loadFromGAS(){
   try{
-    const res = await fetch(SHEETDB_URL+'?sheet=news');
-    const rows = await res.json();
-    if(Array.isArray(rows) && rows.length > 0){
-      DB.news = rows.map(r=>({
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    if(data && Array.isArray(data.news) && data.news.length > 0){
+      DB.news = data.news.map(r=>({
         id: parseInt(r.id)||0,
         title: r.title||'',
         body: r.body||'',
@@ -42,14 +42,13 @@ async function loadFromSheetDB(){
       S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
       saveDB();
       render();
-      // Handle route after news loaded
       setTimeout(()=>handleRoute(),300);
     }
-  }catch(e){ console.log('SheetDB load error',e); }
+  }catch(e){ console.log('GAS load error',e); }
 }
 
-// Save single news to SheetDB
-window._saveToSheetDB = async function(obj, isUpdate){
+// Save news to Google Sheet
+window._saveToGAS = async function(obj, isUpdate){
   try{
     const row = {
       id: String(obj.id),
@@ -66,30 +65,26 @@ window._saveToSheetDB = async function(obj, isUpdate){
       metaTitle: obj.metaTitle||'',
       metaDesc: obj.metaDesc||''
     };
-    if(isUpdate){
-      await fetch(SHEETDB_URL+'/id/'+obj.id+'?sheet=news',{
-        method:'PATCH',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({data: row})
-      });
-    } else {
-      await fetch(SHEETDB_URL+'?sheet=news',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({data: row})
-      });
-    }
-  }catch(e){ console.log('SheetDB save error',e); }
+    await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action: isUpdate?'update':'add', data: row})
+    });
+  }catch(e){ console.log('GAS save error',e); }
 };
 
-// Delete news from SheetDB
-window._deleteFromSheetDB = async function(id){
+// Delete news from Google Sheet
+window._deleteFromGAS = async function(id){
   try{
-    await fetch(SHEETDB_URL+'/id/'+id+'?sheet=news',{method:'DELETE'});
+    await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'delete', id: String(id)})
+    });
   }catch(e){}
 };
 
-window.addEventListener('load', loadFromSheetDB);
+window.addEventListener('load', loadFromGAS);
 </script>
 </script>
 <style>
@@ -1351,14 +1346,14 @@ window.saveN=async(id)=>{
   else DB.news.unshift(obj);
   saveDB();
   toast('محفوظ ہو رہی ہے...');
-  await window._saveToSheetDB(obj, !!id);
+  await window._saveToGAS(obj, !!id);
   S.editN=null;S.admPg='news';
   toast(id?'خبر اپ ڈیٹ ہو گئی ✓':'خبر شائع ہو گئی ✓');
   render();
 }
 window.delN=async(id)=>{
   if(confirm('یہ خبر مستقل حذف کریں؟')){
-    await window._deleteFromSheetDB(id);
+    await window._deleteFromGAS(id);
     DB.news=DB.news.filter(n=>n.id!==id);
     saveDB();toast('خبر حذف ہو گئی');render();
   }
