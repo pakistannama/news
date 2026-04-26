@@ -27,7 +27,7 @@
 // ======================================================
 // GOOGLE APPS SCRIPT CONFIG — Unlimited Free!
 // ======================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyY5rNBdz_ToUWUpOcvulobkBZUWXci0NFzDKkJKPPAtKnVWgpKXdRbulHPQnGmDIpxMw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzSxNJoiYcxNmUfrRdwz8Ngsg869HCwLDM3gdBS3Me7U3kLlvnAuNWUyMoZ-zreY_4AQg/exec';
 
 // Load news from Google Sheet
 async function loadFromGAS(){
@@ -77,6 +77,27 @@ async function loadFromGAS(){
     // Breaking news — only update if available
     if(data && Array.isArray(data.breaking) && data.breaking.length > 0){
       DB.breaking = data.breaking;
+    }
+    // Prayer times — GAS meta sheet se (admin ne jo save kiya)
+    if(data && data.prayer && Object.keys(data.prayer).length > 0){
+      const p = data.prayer;
+      if(p.fajr) DB.prayer.fajr = p.fajr;
+      if(p.zuhr) DB.prayer.zuhr = p.zuhr;
+      if(p.asr) DB.prayer.asr = p.asr;
+      if(p.maghrib) DB.prayer.maghrib = p.maghrib;
+      if(p.isha) DB.prayer.isha = p.isha;
+      if(p.city) DB.prayer.city = p.city;
+    }
+    // Rates — GAS meta sheet se (admin ne jo save kiya)
+    if(data && data.rates && Object.keys(data.rates).length > 0){
+      const rt = data.rates;
+      if(rt.usd) DB.rates.usd = parseFloat(rt.usd);
+      if(rt.eur) DB.rates.eur = parseFloat(rt.eur);
+      if(rt.sar) DB.rates.sar = parseFloat(rt.sar);
+      if(rt.aed) DB.rates.aed = parseFloat(rt.aed);
+      if(rt.gbp) DB.rates.gbp = parseFloat(rt.gbp);
+      if(rt.gold24k) DB.rates.gold24k = parseInt(rt.gold24k);
+      if(rt.lastUpdated) DB.rates.lastUpdated = rt.lastUpdated;
     }
     saveDB();
     render();
@@ -1534,7 +1555,7 @@ window.saveSett=()=>{
   saveDB();toast('ترتیبات محفوظ ✓');render()
 }
 
-window.saveRates=()=>{
+window.saveRates=async()=>{
   DB.rates.gold24k=parseFloat(document.getElementById('rgold')?.value)||DB.rates.gold24k;
   DB.rates.usd=parseFloat(document.getElementById('rusd')?.value)||DB.rates.usd;
   DB.rates.eur=parseFloat(document.getElementById('reur')?.value)||DB.rates.eur;
@@ -1542,10 +1563,16 @@ window.saveRates=()=>{
   DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
   DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
-  saveDB();toast('قیمتیں محفوظ ✓');render()
+  saveDB();
+  // GAS mein bhi save karein taake incognito mein bhi aaye
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'syncMeta',rates:DB.rates})});
+  }catch(e){}
+  toast('قیمتیں محفوظ ✓');render()
 }
 
-window.savePrayer=()=>{
+window.savePrayer=async()=>{
   DB.prayer.city=document.getElementById('pcity')?.value||DB.prayer.city;
   DB.prayer.fajr=document.getElementById('pfajr')?.value||DB.prayer.fajr;
   DB.prayer.zuhr=document.getElementById('pzuhr')?.value||DB.prayer.zuhr;
@@ -1553,7 +1580,13 @@ window.savePrayer=()=>{
   DB.prayer.maghrib=document.getElementById('pmaghrib')?.value||DB.prayer.maghrib;
   DB.prayer.isha=document.getElementById('pisha')?.value||DB.prayer.isha;
   DB.prayer.lastUpdated='manual';
-  saveDB();toast('نماز اوقات محفوظ ✓');render()
+  saveDB();
+  // GAS mein bhi save karein taake incognito mein bhi aaye
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'syncMeta',prayer:DB.prayer})});
+  }catch(e){}
+  toast('نماز اوقات محفوظ ✓');render()
 }
 
 window.refreshPrayer=async()=>{
