@@ -11,18 +11,41 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Google Apps Script Database -->
+<!-- EmailJS for Contact Form -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ======================================================
+  // EmailJS CONFIG — Contact Form Backend
+  // آپ emailjs.com پر مفت account بنائیں اور یہ IDs تبدیل کریں
+  // ======================================================
+  const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'; // emailjs.com سے لیں
+  const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';          // Gmail service ID
+  const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';        // Template ID
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+</script>
 <script>
 // ======================================================
 // GOOGLE APPS SCRIPT CONFIG — Unlimited Free!
 // ======================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwAoKed-vozo5X8oOOOl88AtfwAPjc7ZiUrkijvuPayavWGQTuGznM6Xqal1Lc67t8V5A/exec';
 
-// Load news from Google Sheet
+// Load news + authors from Google Sheet
 async function loadFromGAS(){
   try{
     const res = await fetch(GAS_URL);
     const data = await res.json();
+
+    // ---- Load Authors from GAS ----
+    if(data && Array.isArray(data.authors) && data.authors.length > 0){
+      DB.authors = data.authors.map(r=>({
+        id: parseInt(r.id)||0,
+        name: r.name||'',
+        email: r.email||'',
+        bio: r.bio||''
+      }));
+    }
+
+    // ---- Load News from GAS ----
     if(data && Array.isArray(data.news) && data.news.length > 0){
       DB.news = data.news.map(r=>({
         id: parseInt(r.id)||0,
@@ -40,10 +63,18 @@ async function loadFromGAS(){
         metaDesc: r.metaDesc||''
       }));
       S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
-      saveDB();
-      render();
-      setTimeout(()=>handleRoute(),300);
     }
+
+    saveDB();
+    render();
+    // Ticker bhi update karo GAS load ke baad
+    const brkEl = document.querySelector('.brk-inner');
+    if(brkEl){
+      const items = [...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8).map(n=>n.title);
+      const all = [...items,...items];
+      brkEl.innerHTML = all.map(it=>`<span class="brk-item">${it.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span><span class="brk-sep">★ پاکستان نامہ ★</span>`).join('');
+    }
+    setTimeout(()=>handleRoute(),300);
   }catch(e){ console.log('GAS load error',e); }
 }
 
@@ -85,7 +116,6 @@ window._deleteFromGAS = async function(id){
 };
 
 window.addEventListener('load', loadFromGAS);
-</script>
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -368,7 +398,7 @@ const DEFAULT_DB = {
     siteName:'پاکستان نامہ',
     chiefEditor:'محمد واجد عزیز',
     logo:'',
-    footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
+    footerText:'© '+new Date().getFullYear()+' پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
     adsenseId:'',
     fbUrl:'https://facebook.com/pakistannamaa',
     twUrl:'https://twitter.com/pakistannamaa',
@@ -404,13 +434,13 @@ const DEFAULT_DB = {
     'اقوام متحدہ کا فلسطین کے حق میں تاریخی قرارداد منظور',
   ],
   rates:{
-    gold24k:247800,
-    usd:278.5,
-    eur:302.3,
-    sar:74.2,
-    aed:75.8,
-    gbp:352.1,
-    lastUpdated:'2025-04-20 10:00'
+    gold24k:0,
+    usd:0,
+    eur:0,
+    sar:0,
+    aed:0,
+    gbp:0,
+    lastUpdated:'لوڈ ہو رہا ہے...'
   },
   prayer:{
     fajr:'4:32',zuhr:'12:18',asr:'4:05',maghrib:'7:42',isha:'9:10',
@@ -435,8 +465,15 @@ function loadDB(){
 function saveDB(){
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){}
 }
-function loadPass(){return 'PAKistan11$';}
-function savePass(p){}
+function loadPass(){
+  try{
+    const p=localStorage.getItem(PASS_KEY);
+    return p||'PAKistan11$';
+  }catch(e){return 'PAKistan11$';}
+}
+function savePass(p){
+  try{localStorage.setItem(PASS_KEY,p);}catch(e){}
+}
 
 let DB=loadDB();
 let PASS=loadPass();
@@ -475,23 +512,43 @@ function getSlug(){return location.hash.replace('#/','').replace('news/','').tri
 function pushState(path){location.hash='#/'+path}
 
 // ======================================================
-// PRAYER TIMES (AlAdhan API)
+// PRAYER TIMES (AlAdhan API) — Always fetch fresh from API
 // ======================================================
 async function fetchPrayerTimes(){
   const today=new Date().toDateString();
-  if(DB.prayer.lastUpdated===today&&DB.prayer.fajr!=='--:--')return;
+  // Always fetch fresh — never rely on localStorage cache for prayer times
   try{
-    const r=await fetch('https://api.aladhan.com/v1/timingsByCity?city=Lahore&country=Pakistan&method=1');
+    const now=new Date();
+    const month=now.getMonth()+1;
+    const day=now.getDate();
+    const year=now.getFullYear();
+    const r=await fetch(`https://api.aladhan.com/v1/timingsByCity/${day}-${month}-${year}?city=Lahore&country=Pakistan&method=1`);
     const d=await r.json();
     if(d.code===200){
       const t=d.data.timings;
-      DB.prayer={fajr:t.Fajr,zuhr:t.Dhuhr,asr:t.Asr,maghrib:t.Maghrib,isha:t.Isha,city:'لاہور',lastUpdated:today};
+      // Convert 24h format to 12h for display
+      function to12h(s){
+        if(!s)return '--:--';
+        const [h,m]=s.split(':').map(Number);
+        const ampm=h>=12?'PM':'AM';
+        const hr=h%12||12;
+        return `${hr}:${String(m).padStart(2,'0')} ${ampm}`;
+      }
+      DB.prayer={
+        fajr:to12h(t.Fajr),
+        zuhr:to12h(t.Dhuhr),
+        asr:to12h(t.Asr),
+        maghrib:to12h(t.Maghrib),
+        isha:to12h(t.Isha),
+        city:'لاہور',
+        lastUpdated:today
+      };
       saveDB();
       // refresh prayer widget only
       const pw=document.getElementById('prayer-widget');
       if(pw)pw.innerHTML=buildPrayerInner();
     }
-  }catch(e){}
+  }catch(e){console.log('Prayer API error',e);}
 }
 
 function getCurrentPrayer(){
@@ -525,15 +582,83 @@ function buildPrayerInner(){
 }
 
 // ======================================================
-// RENDER ENGINE
+// LIVE GOLD & CURRENCY RATES — Real APIs
 // ======================================================
+async function fetchLiveRates(){
+  try{
+    // Fetch USD/PKR and other currency rates using exchangerate-api (free)
+    const fxRes = await fetch('https://open.er-api.com/v6/latest/USD');
+    const fxData = await fxRes.json();
+    if(fxData && fxData.rates){
+      const pkr = fxData.rates.PKR || 278;
+      const eur2pkr = (pkr / fxData.rates.EUR).toFixed(2);
+      const sar2pkr = (pkr / fxData.rates.SAR).toFixed(2);
+      const aed2pkr = (pkr / fxData.rates.AED).toFixed(2);
+      const gbp2pkr = (pkr / fxData.rates.GBP).toFixed(2);
+      DB.rates.usd = parseFloat(pkr.toFixed(2));
+      DB.rates.eur = parseFloat(eur2pkr);
+      DB.rates.sar = parseFloat(sar2pkr);
+      DB.rates.aed = parseFloat(aed2pkr);
+      DB.rates.gbp = parseFloat(gbp2pkr);
+      DB.rates.lastUpdated = new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
+      saveDB();
+      // Refresh sidebar rates widget if visible
+      const rw = document.getElementById('rates-widget');
+      if(rw) rw.innerHTML = buildRatesInner();
+    }
+  }catch(e){console.log('Currency API error',e);}
+
+  try{
+    // Gold price in USD per troy oz from metals-api alternative (free goldapi)
+    // Using goldprice.org public API as fallback calculation
+    // 1 troy oz = 3.75 tola; Gold per tola in PKR
+    // Using metalpriceapi.com free tier or calculating from USD gold price
+    const goldRes = await fetch('https://api.gold-api.com/price/XAU');
+    const goldData = await goldRes.json();
+    if(goldData && goldData.price){
+      const goldUsdPerOz = goldData.price;
+      const pkrRate = DB.rates.usd || 278;
+      // 1 troy oz = 3.7500 tola (Pakistani standard)
+      const gold24kPerTola = Math.round((goldUsdPerOz / 3.75) * pkrRate);
+      DB.rates.gold24k = gold24kPerTola;
+      DB.rates.lastUpdated = new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
+      saveDB();
+      const rw = document.getElementById('rates-widget');
+      if(rw) rw.innerHTML = buildRatesInner();
+    }
+  }catch(e){console.log('Gold API error',e);}
+}
+
+function buildRatesInner(){
+  if(!DB.rates.usd){
+    return `<div style="text-align:center;padding:20px;font-family:var(--fi);font-size:13px;color:#888">⏳ شرح زر لوڈ ہو رہی ہے...</div>`;
+  }
+  return `<div class="gold-bar">
+    <span class="lbl">🥇 سونا 24K (فی تولہ)</span>
+    <span class="val">₨ ${DB.rates.gold24k.toLocaleString()}</span>
+  </div>
+  ${[
+    {flag:'🇺🇸',name:'USD ڈالر',val:DB.rates.usd,up:true},
+    {flag:'🇪🇺',name:'EUR یورو',val:DB.rates.eur,up:false},
+    {flag:'🇸🇦',name:'SAR ریال',val:DB.rates.sar,up:true},
+    {flag:'🇦🇪',name:'AED درہم',val:DB.rates.aed,up:true},
+    {flag:'🇬🇧',name:'GBP پاؤنڈ',val:DB.rates.gbp,up:true},
+  ].map(r=>`<div class="rate-item">
+    <span class="rate-label"><span class="rate-flag">${r.flag}</span>${r.name}</span>
+    <div style="text-align:left;direction:ltr">
+      <div class="rate-val">₨ ${Number(r.val).toFixed(2)}</div>
+    </div>
+  </div>`).join('')}
+  <div class="rates-update">آخری تازہ کاری: ${DB.rates.lastUpdated}</div>`;
+}
 function render(){
   const app=document.getElementById('app');
   if(S.adm&&!S.admIn){app.innerHTML=rLogin();return}
   if(S.adm){app.innerHTML=rAdmin();return}
   app.innerHTML=rSite();
-  // fetch prayers asynchronously after render
+  // fetch prayers and rates asynchronously after render
   fetchPrayerTimes();
+  fetchLiveRates();
 }
 
 // ======================================================
@@ -585,7 +710,17 @@ function rHdr(){
 // BREAKING NEWS
 // ======================================================
 function rBrk(){
-  const items=DB.breaking;
+  // Use latest news titles from DB, fallback to DB.breaking if no news yet
+  let items = [];
+  if(DB.news && DB.news.length > 0){
+    // Get latest 8 news titles
+    items = [...DB.news]
+      .sort((a,b)=>new Date(b.date)-new Date(a.date))
+      .slice(0,8)
+      .map(n=>n.title);
+  } else {
+    items = DB.breaking || [];
+  }
   if(!items.length)return'';
   // Double the items for seamless loop
   const all=[...items,...items];
@@ -673,26 +808,7 @@ function rSidebar(tr){
 
 <div class="rates-w sw">
   <div class="sw-ttl">📈 سونا اور زرمبادلہ</div>
-  <div class="sw-body">
-    <div class="gold-bar">
-      <span class="lbl">🥇 سونا 24K (فی تولہ)</span>
-      <span class="val">₨ ${DB.rates.gold24k.toLocaleString()}</span>
-    </div>
-    ${[
-      {flag:'🇺🇸',name:'USD ڈالر',val:DB.rates.usd,ch:'+0.3%',up:true},
-      {flag:'🇪🇺',name:'EUR یورو',val:DB.rates.eur,ch:'-0.1%',up:false},
-      {flag:'🇸🇦',name:'SAR ریال',val:DB.rates.sar,ch:'+0.2%',up:true},
-      {flag:'🇦🇪',name:'AED درہم',val:DB.rates.aed,ch:'+0.1%',up:true},
-      {flag:'🇬🇧',name:'GBP پاؤنڈ',val:DB.rates.gbp,ch:'+0.4%',up:true},
-    ].map(r=>`<div class="rate-item">
-      <span class="rate-label"><span class="rate-flag">${r.flag}</span>${r.name}</span>
-      <div style="text-align:left;direction:ltr">
-        <div class="rate-val">₨ ${r.val.toFixed(2)}</div>
-        <span class="rate-change ${r.up?'rate-up':'rate-dn'}">${r.ch}</span>
-      </div>
-    </div>`).join('')}
-    <div class="rates-update">آخری تازہ کاری: ${DB.rates.lastUpdated}</div>
-  </div>
+  <div class="sw-body" id="rates-widget">${buildRatesInner()}</div>
 </div>
 
 <div class="sw"><div class="sw-ttl">🔥 مقبول ترین</div><div class="sw-body">
@@ -856,17 +972,18 @@ function rContact(){return`<div class="page-wrap">
 <p>آپ کے سوالات، تجاویز یا شکایات کے لیے ہم سے رابطہ کریں۔</p>
 <div class="contact-form">
 <div class="cf-row">
-<div class="cf-field"><label>نام</label><input type="text" placeholder="آپ کا نام" dir="rtl"></div>
-<div class="cf-field"><label>Email</label><input type="email" placeholder="email@example.com" dir="ltr"></div>
+<div class="cf-field"><label>نام</label><input id="cf_name" type="text" placeholder="آپ کا نام" dir="rtl"></div>
+<div class="cf-field"><label>Email</label><input id="cf_email" type="email" placeholder="email@example.com" dir="ltr"></div>
 </div>
 <div class="cf-row">
-<div class="cf-field"><label>فون نمبر</label><input type="tel" placeholder="+92-XXX-XXXXXXX" dir="ltr"></div>
+<div class="cf-field"><label>فون نمبر</label><input id="cf_phone" type="tel" placeholder="+92-XXX-XXXXXXX" dir="ltr"></div>
 <div class="cf-field"><label>موضوع</label>
-<select dir="rtl"><option>خبر کی تصحیح</option><option>اشتہار کا پوچھنا</option><option>شکایت</option><option>تجویز</option><option>دیگر</option></select>
+<select id="cf_subject" dir="rtl"><option>خبر کی تصحیح</option><option>اشتہار کا پوچھنا</option><option>شکایت</option><option>تجویز</option><option>دیگر</option></select>
 </div>
 </div>
-<div class="cf-field" style="margin-bottom:14px"><label>پیغام</label><textarea placeholder="اپنا پیغام یہاں لکھیں..." rows="5" dir="rtl"></textarea></div>
-<button class="cf-submit" onclick="toast('آپ کا پیغام موصول ہوا۔ جلد رابطہ کیا جائے گا۔ ✓')">📨 پیغام بھیجیں</button>
+<div class="cf-field" style="margin-bottom:14px"><label>پیغام</label><textarea id="cf_message" placeholder="اپنا پیغام یہاں لکھیں..." rows="5" dir="rtl"></textarea></div>
+<button class="cf-submit" id="cf_btn" onclick="submitContactForm()">📨 پیغام بھیجیں</button>
+<div id="cf_status" style="margin-top:10px;font-family:var(--fi);font-size:13px;min-height:20px"></div>
 </div>
 <div style="margin-top:20px;font-family:var(--fi);font-size:13px;color:var(--ts);line-height:2">
 📍 لاہور، پنجاب، پاکستان<br>
@@ -1374,16 +1491,40 @@ window.saveCat=()=>{
 window.editCat=(id)=>{S.editC=DB.categories.find(c=>c.id===id)||null;render()}
 window.delCat=(id)=>{if(confirm('زمرہ حذف کریں؟')){DB.categories=DB.categories.filter(c=>c.id!==id);saveDB();toast('زمرہ حذف ✓');render()}}
 
-window.saveAuth=()=>{
+window.saveAuth=async()=>{
   const name=document.getElementById('an')?.value?.trim()||'';
   if(!name){toast('نام ضروری ہے');return}
   const obj={name,email:document.getElementById('ae')?.value||'',bio:document.getElementById('ab')?.value||''};
-  if(S.editA){const i=DB.authors.findIndex(a=>a.id===S.editA.id);if(i>=0)DB.authors[i]={...DB.authors[i],...obj}}
-  else DB.authors.push({id:Date.now(),...obj});
-  saveDB();S.editA=null;toast('مصنف محفوظ ✓');render()
+  let isUpdate=false;
+  if(S.editA){
+    const i=DB.authors.findIndex(a=>a.id===S.editA.id);
+    if(i>=0){DB.authors[i]={...DB.authors[i],...obj};obj.id=DB.authors[i].id;}
+    isUpdate=true;
+  } else {
+    obj.id=Date.now();
+    DB.authors.push(obj);
+  }
+  saveDB();S.editA=null;toast('محفوظ ہو رہا ہے...');
+  // GAS mein bhi save karo
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:isUpdate?'updateAuthor':'addAuthor',data:{id:String(obj.id),name:obj.name,email:obj.email||'',bio:obj.bio||''}})
+    });
+  }catch(e){console.log('Author GAS save error',e);}
+  toast('مصنف محفوظ ✓');render();
 }
 window.editAuth=(id)=>{S.editA=DB.authors.find(a=>a.id===id)||null;render()}
-window.delAuth=(id)=>{if(confirm('مصنف حذف کریں؟')){DB.authors=DB.authors.filter(a=>a.id!==id);saveDB();toast('مصنف حذف ✓');render()}}
+window.delAuth=async(id)=>{
+  if(confirm('مصنف حذف کریں؟')){
+    DB.authors=DB.authors.filter(a=>a.id!==id);
+    saveDB();toast('مصنف حذف ✓');render();
+    try{
+      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'deleteAuthor',id:String(id)})
+      });
+    }catch(e){}
+  }
+}
 
 window.saveSett=()=>{
   DB.settings.siteName=document.getElementById('sn')?.value||DB.settings.siteName;
@@ -1552,6 +1693,56 @@ function fallbackCopy(text){
 }
 
 window.addEventListener('hashchange',()=>{handleRoute();window.scrollTo(0,0)});
+
+// ======================================================
+// CONTACT FORM — EmailJS Backend
+// ======================================================
+window.submitContactForm = async function(){
+  const name = document.getElementById('cf_name')?.value?.trim()||'';
+  const email = document.getElementById('cf_email')?.value?.trim()||'';
+  const phone = document.getElementById('cf_phone')?.value?.trim()||'';
+  const subject = document.getElementById('cf_subject')?.value||'';
+  const message = document.getElementById('cf_message')?.value?.trim()||'';
+  const btn = document.getElementById('cf_btn');
+  const status = document.getElementById('cf_status');
+
+  if(!name||!email||!message){
+    if(status){status.style.color='#c0392b';status.textContent='⚠ براہ کرم نام، email اور پیغام ضروری ہیں';}
+    return;
+  }
+
+  if(btn){btn.disabled=true;btn.textContent='⏳ بھیجا جا رہا ہے...';}
+  if(status){status.style.color='#666';status.textContent='پیغام بھیجا جا رہا ہے...';}
+
+  // Check if EmailJS is configured
+  if(EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY'){
+    // EmailJS not configured yet — fallback to mailto
+    const mailtoLink = `mailto:info@pakistannamaa.pk?subject=${encodeURIComponent(subject+' — '+name)}&body=${encodeURIComponent('نام: '+name+'\nEmail: '+email+'\nفون: '+phone+'\n\nپیغام:\n'+message)}`;
+    window.open(mailtoLink,'_blank');
+    if(status){status.style.color='#2db844';status.textContent='✅ آپ کا email app کھل گیا ہے — پیغام بھیجیں';}
+    if(btn){btn.disabled=false;btn.textContent='📨 پیغام بھیجیں';}
+    return;
+  }
+
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      from_name: name,
+      from_email: email,
+      phone: phone,
+      subject: subject,
+      message: message,
+      to_name: 'پاکستان نامہ',
+      reply_to: email,
+    });
+    if(status){status.style.color='#2db844';status.textContent='✅ آپ کا پیغام موصول ہوا — جلد رابطہ کیا جائے گا';}
+    // Clear form
+    ['cf_name','cf_email','cf_phone','cf_message'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }catch(e){
+    if(status){status.style.color='#c0392b';status.textContent='❌ پیغام بھیجنے میں خرابی — دوبارہ کوشش کریں';}
+    console.log('EmailJS error',e);
+  }
+  if(btn){btn.disabled=false;btn.textContent='📨 پیغام بھیجیں';}
+};
 
 // ======================================================
 // BOOT
