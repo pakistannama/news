@@ -69,6 +69,8 @@ async function loadFromGAS(){
         metaTitle: r.metaTitle||'',
         metaDesc: r.metaDesc||''
       }));
+      // Sort by date newest first immediately after loading
+      DB.news.sort((a,b)=>new Date(b.date)-new Date(a.date));
       S.nid = DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1;
     }
     // Authors — only update if GAS actually returns them
@@ -955,9 +957,10 @@ ${S.srch?`<button style="background:#999" onclick="S.srch='';S.staticPg=null;ren
 // ======================================================
 function rHome(){
   const latest=[...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  // Featured: use marked-featured news, fallback to latest 3 if none marked
-  let featured=DB.news.filter(n=>n.featured).slice(0,3);
-  if(featured.length===0) featured=latest.slice(0,3);
+  // Featured box: prefer featured-marked news, but ALWAYS show latest 3 as fallback
+  // Latest news always comes first regardless
+  const featuredMarked=DB.news.filter(n=>n.featured).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const featured=featuredMarked.length>=1 ? featuredMarked.slice(0,3) : latest.slice(0,3);
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   const perPage=8;
   const totalPages=Math.ceil(latest.length/perPage);
