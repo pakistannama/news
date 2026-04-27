@@ -231,7 +231,7 @@ button{cursor:pointer}
 
 /* ===== LAYOUT ===== */
 .wrap{max-width:1240px;margin:0 auto;padding:20px 16px;width:100%}
-.grid{display:grid;grid-template-columns:1fr 310px;gap:24px}
+.grid{display:grid;grid-template-columns:1fr 260px;gap:24px}
 
 /* ===== SEARCH ===== */
 .srch-bar{display:flex;gap:8px;margin-bottom:20px;background:var(--card);padding:12px 16px;border-radius:var(--rl);box-shadow:var(--sh)}
@@ -854,9 +854,6 @@ function render(){
   if(S.adm&&!S.admIn){app.innerHTML=rLogin();return}
   if(S.adm){app.innerHTML=rAdmin();return}
   app.innerHTML=rSite();
-  // fetch prayers and rates asynchronously after render
-  fetchPrayerTimes();
-  fetchLiveRates();
 }
 
 // ======================================================
@@ -1000,19 +997,6 @@ ${cats4.map(cat=>{
 // ======================================================
 function rSidebar(tr){
   return`
-<div class="prayer-w">
-  <div class="prayer-hdr">
-    <h4>🕌 نماز کے اوقات</h4>
-    <span class="prayer-city">${DB.prayer.city}</span>
-  </div>
-  <div class="prayer-grid" id="prayer-widget">${buildPrayerInner()}</div>
-</div>
-
-<div class="rates-w sw">
-  <div class="sw-ttl">📈 سونا اور زرمبادلہ</div>
-  <div class="sw-body" id="rates-widget">${buildRatesInner()}</div>
-</div>
-
 <div class="sw"><div class="sw-ttl">🔥 مقبول ترین</div><div class="sw-body">
 ${tr.map((n,i)=>`<div class="pop-item" onclick="viewN(${n.id})">
 <div class="pop-n">${i+1}</div>
@@ -1313,7 +1297,7 @@ function rAdmin(){
   const pages={
     dashboard:rDash,news:rNewsAdm,addNews:rAddNews,
     cats:rCatsAdm,authors:rAuthAdm,settings:rSettAdm,
-    rates:rRatesAdm,prayer:rPrayerAdm,social:rSocialAdm,seo:rSeoAdm,password:rPassAdm
+    social:rSocialAdm,seo:rSeoAdm,password:rPassAdm
   };
   const fn=pages[S.admPg]||rDash;
   return`<div class="adm-ov">
@@ -1333,8 +1317,6 @@ function rAdmin(){
 <li><a class="${S.admPg==='authors'?'on':''}" onclick="setPg('authors')">✍ مصنفین</a></li>
 <li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px">
 <a class="${S.admPg==='settings'?'on':''}" onclick="setPg('settings')">⚙ سائٹ ترتیبات</a></li>
-<li><a class="${S.admPg==='rates'?'on':''}" onclick="setPg('rates')">📈 شرحِ زر و سونا</a></li>
-<li><a class="${S.admPg==='prayer'?'on':''}" onclick="setPg('prayer')">🕌 نماز اوقات</a></li>
 <li><a class="${S.admPg==='social'?'on':''}" onclick="setPg('social')">🔗 سوشل میڈیا</a></li>
 <li><a class="${S.admPg==='seo'?'on':''}" onclick="setPg('seo')">🔍 SEO & Ads</a></li>
 <li style="border-top:1px solid #f0f0f0;padding-top:6px;margin-top:4px">
