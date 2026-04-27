@@ -609,7 +609,7 @@ const DEFAULT_DB = {
     logo:'',
     footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
     adsenseId:'',
-    fbUrl:'',
+    fbUrl:'https://www.facebook.com/pakistannama58',
     twUrl:'',
     waUrl:'',
     igUrl:'',
@@ -954,8 +954,10 @@ ${S.srch?`<button style="background:#999" onclick="S.srch='';S.staticPg=null;ren
 // HOME PAGE
 // ======================================================
 function rHome(){
-  const featured=DB.news.filter(n=>n.featured).slice(0,3);
   const latest=[...DB.news].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  // Featured: use marked-featured news, fallback to latest 3 if none marked
+  let featured=DB.news.filter(n=>n.featured).slice(0,3);
+  if(featured.length===0) featured=latest.slice(0,3);
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   const perPage=8;
   const totalPages=Math.ceil(latest.length/perPage);
@@ -1055,7 +1057,7 @@ ${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span style="font-siz
 // ======================================================
 function rCatPg(){
   const cat=DB.categories.find(c=>c.id===S.catF);
-  const allNews=DB.news.filter(n=>n.catId===S.catF);
+  const allNews=[...DB.news].filter(n=>n.catId===S.catF).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   const perPage=10;
   const totalPages=Math.ceil(allNews.length/perPage);
