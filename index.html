@@ -2,7 +2,11 @@
 <html lang="ur" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- Pakistan Namaa v6.0 — Production Build -->
 <title>پاکستان نامہ — تازہ ترین خبریں</title>
 <meta name="description" content="پاکستان نامہ — پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ">
 <meta property="og:site_name" content="پاکستان نامہ">
@@ -27,13 +31,27 @@
 // ======================================================
 // GOOGLE APPS SCRIPT CONFIG — Unlimited Free!
 // ======================================================
+// ================================================================
+// ⚙️ CONFIGURATION — اپنی settings یہاں سیٹ کریں
+// Google Apps Script URL — apna GAS deploy URL yahan daalen
+// اگر آپ نے GAS deploy نہیں کی تو data صرف localStorage میں رہے گا
+// ================================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyY5rNBdz_ToUWUpOcvulobkBZUWXci0NFzDKkJKPPAtKnVWgpKXdRbulHPQnGmDIpxMw/exec';
+// اگر GAS کام نہ کرے تو false کریں (صرف localStorage mode)
+const GAS_ENABLED = true;
+
+// Timeout-safe fetch — no AbortController (avoids DataCloneError in iframes)
+function fetchWithTimeout(url, options={}, ms=10000){
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))
+  ]);
+}
 
 // Load news from Google Sheet
 async function loadFromGAS(){
   try{
-    const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),12000);
-    const res = await fetch(GAS_URL,{signal:ctrl.signal});clearTimeout(tid);
+    const res = await fetchWithTimeout(GAS_URL,{},12000);
     const data = await res.json();
     if(data && Array.isArray(data.news) && data.news.length > 0){
       DB.news = data.news.map(r=>({
@@ -158,7 +176,7 @@ window._deleteFromGAS = async function(id){
   }catch(e){}
 };
 
-window.addEventListener('load', loadFromGAS);
+window.addEventListener('load', ()=>{ if(typeof GAS_ENABLED!=='undefined'&&!GAS_ENABLED){render();setTimeout(()=>handleRoute(),300);}else{loadFromGAS();} });
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -233,7 +251,7 @@ button{cursor:pointer}
 .ncard{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative}
 .ncard:hover{transform:translateY(-4px);box-shadow:var(--sh2)}
 .ncard-img{width:100%;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center}
-.ncard-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.ncard-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s;display:block}
 .ncard:hover .ncard-img img{transform:scale(1.04)}
 .ncard-img .placeholder{font-size:44px;opacity:.25}
 .ncard-body{padding:14px}
@@ -247,7 +265,7 @@ button{cursor:pointer}
 .nli{display:flex;flex-direction:row;gap:12px;background:var(--card);border-radius:var(--r);padding:12px;box-shadow:0 1px 5px rgba(0,0,0,.05);cursor:pointer;transition:box-shadow .2s,transform .2s;direction:rtl;align-items:flex-start}
 .nli:hover{box-shadow:var(--sh);transform:translateX(-2px)}
 .nli-img{width:100px;height:72px;border-radius:6px;flex-shrink:0;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;margin-right:0;margin-left:0}
-.nli-img img{width:100%;height:100%;object-fit:cover}
+.nli-img img{width:100%;height:100%;object-fit:cover;display:block}
 .nli-body{flex:1;min-width:0}
 .nli-ttl{font-family:var(--fu);font-size:15px;font-weight:600;line-height:1.55;margin-bottom:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .nli-meta{font-size:11px;color:var(--tm);font-family:var(--fi);direction:ltr;text-align:right}
@@ -294,8 +312,8 @@ button{cursor:pointer}
 /* ===== ARTICLE PAGE ===== */
 .art-wrap{background:var(--card);border-radius:var(--rl);padding:24px;box-shadow:var(--sh);margin-bottom:20px}
 .art-wrap h1{font-family:var(--fu);font-size:26px;font-weight:700;line-height:1.75;margin-bottom:14px;color:var(--tp)}
-.art-hero{width:100%;border-radius:var(--r);margin-bottom:18px;overflow:hidden;max-height:400px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
-.art-hero img{width:100%;max-height:500px;object-fit:contain;background:#f5f5f5}
+.art-hero{width:100%;border-radius:var(--r);margin-bottom:18px;overflow:hidden;height:300px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.art-hero img{width:100%;height:100%;object-fit:cover;background:#f5f5f5}
 .art-meta{display:flex;gap:14px;font-family:var(--fi);font-size:12px;color:var(--tm);margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;align-items:center}
 .art-body{font-family:var(--fu);font-size:18px;line-height:2.15;color:var(--tp)}
 .art-body p{margin-bottom:16px}
@@ -419,8 +437,7 @@ button{cursor:pointer}
   .feat-side .ncard{flex:unset!important;min-width:unset!important}
   .sb{width:100%!important}
   .wrap{padding:12px 10px}
-  .nli{flex-direction:row}
-  .nli-img{width:88px;height:64px;flex-shrink:0}
+  /* .nli stays row — handled in 640px block */
   .ncard-ttl{font-size:15px!important}
   .art-wrap{padding:16px}
   .art-wrap h1{font-size:20px}
@@ -466,6 +483,91 @@ button{cursor:pointer}
   .pop-tx{font-size:12px}
   .sec-ttl{font-size:16px}
 }
+/* ===== RESPONSIVE CARDS 3-COL → 1-COL ===== */
+.cards-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+/* ===== IMPROVED MOBILE STYLES ===== */
+@media(max-width:640px){
+  /* Header */
+  .hdr-top{padding:10px 12px;flex-wrap:nowrap}
+  .hdr-left{display:none!important}
+  .hdr-right{min-width:unset!important;flex-shrink:0}
+  .logo-text{font-size:22px!important}
+  .logo-center{gap:2px}
+  .date-bar{padding:4px 12px;font-size:10px}
+  .date-bar .pst{display:none}
+
+  /* Breaking news */
+  .brk-lbl{min-width:80px!important;font-size:11px!important;padding:0 10px!important}
+  .brk-item{font-size:12px!important;padding:0 14px!important}
+
+  /* Main layout */
+  .wrap{padding:8px!important}
+  .grid{grid-template-columns:1fr!important;gap:12px!important}
+
+  /* Featured news grid */
+  .feat-grid{grid-template-columns:1fr!important}
+  .feat-side{flex-direction:column!important}
+  .feat-side .ncard{flex:unset!important;min-width:unset!important;width:100%!important}
+
+  /* 3-col cards → 1-col on mobile */
+  .cards-3col{grid-template-columns:1fr!important;gap:8px!important}
+
+  /* News list items — horizontal layout maintained but tighter */
+  .nli{padding:10px!important;gap:10px!important}
+  .nli-img{width:88px!important;height:68px!important;flex-shrink:0!important}
+  .nli-ttl{font-size:14px!important;-webkit-line-clamp:3!important}
+  .nli-meta{font-size:10px!important;margin-top:4px}
+
+  /* Article page */
+  .art-wrap{padding:14px!important;border-radius:8px!important}
+  .art-wrap h1{font-size:18px!important;line-height:1.6!important}
+  .art-hero{height:200px!important;border-radius:6px!important}
+  .art-body{font-size:15px!important;line-height:2!important}
+  .art-meta{gap:8px!important;font-size:11px!important}
+  .back-btn{font-size:12px!important;padding:7px 14px!important}
+
+  /* Share buttons — wrap nicely */
+  .share-row{gap:6px!important;padding-top:12px!important}
+  .sh-btn{padding:7px 12px!important;font-size:11px!important;border-radius:16px!important}
+
+  /* Category page header */
+  .cat-hdr{padding:14px!important;gap:10px!important}
+  .cat-hdr h2{font-size:18px!important}
+  .cat-hdr .cat-icon{font-size:24px!important}
+
+  /* Sidebar */
+  .sb{width:100%!important}
+  .prayer-grid{grid-template-columns:1fr 1fr!important}
+  .pop-tx{font-size:13px}
+
+  /* Footer */
+  .ftr-grid{grid-template-columns:1fr!important}
+  .ftr{padding:22px 14px 14px!important}
+  .social-row{gap:6px}
+  .soc-btn{padding:5px 12px!important;font-size:11px!important}
+
+  /* Section titles */
+  .sec-ttl{font-size:15px!important}
+
+  /* Pagination */
+  .pg{gap:5px}
+  .pg-btn{padding:6px 12px!important;font-size:12px!important}
+
+  /* Search bar */
+  .srch-bar{padding:10px 12px}
+  .srch-bar input{font-size:14px}
+  .srch-bar button{padding:9px 14px!important;font-size:12px!important}
+}
+
+@media(max-width:380px){
+  .logo-text{font-size:19px!important}
+  .art-hero{height:170px!important}
+  .nli-img{width:76px!important;height:60px!important}
+  .cards-3col{grid-template-columns:1fr!important}
+  .sh-btn{padding:6px 10px!important;font-size:10px!important}
+}
+
 </style>
 </head>
 <body>
@@ -486,10 +588,10 @@ const DEFAULT_DB = {
     logo:'',
     footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
     adsenseId:'',
-    fbUrl:'https://facebook.com/pakistannamaa',
-    twUrl:'https://twitter.com/pakistannamaa',
-    waUrl:'https://wa.me/923001234567',
-    igUrl:'https://instagram.com/pakistannamaa',
+    fbUrl:'https://facebook.com/pakistannamaa',  // ← اپنا Facebook page URL یہاں لکھیں
+    twUrl:'https://twitter.com/pakistannamaa',   // ← اپنا Twitter/X URL
+    waUrl:'https://wa.me/923001234567',           // ← اپنا WhatsApp نمبر
+    igUrl:'https://instagram.com/pakistannamaa', // ← اپنا Instagram URL
   },
   categories:[
     {id:1,name:'پاکستان',slug:'pakistan',color:'#2db844',icon:'🇵🇰'},
@@ -526,7 +628,7 @@ const DEFAULT_DB = {
     sar:74.2,
     aed:75.8,
     gbp:352.1,
-    lastUpdated:'2025-04-20 10:00'
+    lastUpdated:'تازہ کاری جاری ہے...'
   },
   prayer:{
     fajr:'4:45 ص',zuhr:'12:22 م',asr:'4:10 م',maghrib:'7:28 م',isha:'8:58 م',
@@ -585,7 +687,9 @@ let S={
   viewN:null,catF:null,srch:'',staticPg:null,
   nid:DB.news.reduce((mx,n)=>Math.max(mx,n.id),0)+1,
   artPage:1,catPage:1,
-  prayerLoading:false
+  prayerLoading:false,
+  admSrchQ:'',
+  ratesMode:'auto'
 };
 
 // ======================================================
@@ -617,10 +721,7 @@ async function fetchPrayerTimes(){
     const now=new Date();
     const day=now.getDate(),month=now.getMonth()+1,year=now.getFullYear();
     const url=GAS_URL+'?action=prayer&city=Bahawalnagar&country=Pakistan&method=1&day='+day+'&month='+month+'&year='+year;
-    const ctrl=new AbortController();
-    const tid=setTimeout(()=>ctrl.abort(),8000);
-    const r=await fetch(url,{signal:ctrl.signal});
-    clearTimeout(tid);
+    const r=await fetchWithTimeout(url,{},8000);
     const d=await r.json();
     if(d.prayer){
       const t=d.prayer;
@@ -686,7 +787,7 @@ function buildPrayerInner(){
 async function fetchLiveRates(){
   try{
     const url=GAS_URL+'?action=rates';
-    const ctrl2=new AbortController();const tid2=setTimeout(()=>ctrl2.abort(),8000);const r=await fetch(url,{signal:ctrl2.signal});clearTimeout(tid2);
+    const r=await fetchWithTimeout(url,{},8000);
     const d=await r.json();
     if(d.rates){
       const rt=d.rates;
@@ -864,7 +965,7 @@ ${cats4.map(cat=>{
   const cn=DB.news.filter(n=>n.catId===cat.id).slice(0,3);
   return cn.length?`<div style="margin-bottom:28px">
 <div class="sec-ttl" style="border-color:${cat.color}">${cat.icon} ${cat.name} <a onclick="setCAT(${cat.id})">مزید ←</a></div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${cn.map(n=>rCard(n,'small')).join('')}</div>
+<div class="cards-3col">${cn.map(n=>rCard(n,'small')).join('')}</div>
 </div>`:'';
 }).join('')}
 </div>
@@ -973,7 +1074,6 @@ ${totalPages>1?`<div class="pg">${Array.from({length:totalPages},(_,i)=>`<button
 function rArticle(){
   const n=DB.news.find(x=>x.id===S.viewN);
   if(!n)return`<p style="text-align:center;padding:40px;font-family:var(--fu)">خبر نہیں ملی</p>`;
-  n.views++;saveDB();
   const cat=getCat(n.catId);
   const related=DB.news.filter(x=>x.catId===n.catId&&x.id!==n.id).slice(0,3);
   const shareLink=buildShareLink(n);
@@ -1012,7 +1112,7 @@ ${n.image?`<img src="${escUrl(n.image)}" alt="${esc(n.title)}">`:`<span style="f
 </div>
 ${related.length?`<div style="margin-top:22px">
 <div class="sec-ttl" style="border-color:${cat.color}">متعلقہ خبریں</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${related.map(x=>rCard(x,'small')).join('')}</div>
+<div class="cards-3col">${related.map(x=>rCard(x,'small')).join('')}</div>
 </div>`:''}
 </div>
 <div class="sb">${rSidebar([...DB.news].sort((a,b)=>b.views-a.views).slice(0,5))}</div>
@@ -1025,13 +1125,24 @@ ${related.length?`<div style="margin-top:22px">
 function rStaticPage(pg){
   const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
   let content='';
-  if(pg==='about')content=rAbout();
+  if(pg==='_search')content=rSrchResults();
+  else if(pg==='about')content=rAbout();
   else if(pg==='contact')content=rContact();
   else if(pg==='advertise')content=rAdvertise();
   else if(pg==='privacy')content=rPrivacy();
   else if(pg==='sitemap')content=rSitemap();
   else if(pg==='search')content=rSearchPage();
   return`<div class="grid"><div>${content}</div><div class="sb">${rSidebar(trending)}</div></div>`;
+}
+
+function rSrchResults(){
+  const v=S.srch||'';
+  const q=v.toLowerCase();
+  const res=DB.news.filter(n=>n.title.includes(v)||n.body.includes(v)||(n.tags||'').toLowerCase().includes(q));
+  return`<div>
+<div class="sec-ttl">🔍 نتائج: "${esc(v)}" <span style="font-weight:400;font-size:13px;color:var(--tm)">(${res.length} خبریں)</span></div>
+<div class="nlist">${res.length?res.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu);font-size:16px">🔍 "${esc(v)}" کے لیے کوئی نتیجہ نہیں ملا</div>`}</div>
+</div>`;
 }
 
 function rAbout(){return`<div class="page-wrap">
@@ -1240,7 +1351,7 @@ function rDash(){
 function rNewsAdm(){
   return`<div class="adm-ttl">📰 خبریں مینیجر <button class="btn-p" onclick="S.editN=null;setPg('addNews')">+ نئی خبر</button></div>
 <div style="background:#fff;border-radius:var(--rl);padding:14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;box-shadow:var(--sh)">
-<input id="admSrch" placeholder="خبریں تلاش کریں..." style="flex:1;padding:8px 12px;border:1.5px solid var(--bdr);border-radius:var(--r);font-size:13px;outline:none" oninput="render()">
+<input id="admSrch" placeholder="خبریں تلاش کریں..." style="flex:1;padding:8px 12px;border:1.5px solid var(--bdr);border-radius:var(--r);font-size:13px;outline:none" value="${esc(S.admSrchQ||'')}" oninput="S.admSrchQ=this.value;renderAdmNews()">
 </div>
 <table class="dtbl" style="table-layout:fixed"><thead><tr><th style="width:35%">عنوان</th><th>زمرہ</th><th>تاریخ</th><th>نمایاں</th><th>مناظرہ</th><th>عمل</th></tr></thead>
 <tbody>${DB.news.map(n=>`<tr>
@@ -1385,7 +1496,7 @@ function rSettAdm(){
 }
 
 window.clearSiteCache=()=>{
-  if(confirm('تمام localStorage data حذف ہوگا۔\nویب سائٹ نئے سرے سے لوڈ ہوگی۔\nیقین ہے؟')){
+  if(confirm('تمام localStorage data حذف ہوگا۔\nویب سائٹ نئے سرے سے لوڈ ہوگی (GAS سے تازہ ڈیٹا ملے گا)۔\nیقین ہے؟')){
     localStorage.clear();toast('صاف ہو گیا — دوبارہ لوڈ ہو رہا ہے...',2000);
     setTimeout(()=>location.reload(),2000);
   }
@@ -1393,23 +1504,39 @@ window.clearSiteCache=()=>{
 
 function rRatesAdm(){
   const r=DB.rates;
+  const isAuto=S.ratesMode!=='manual';
   return`<div class="adm-ttl">📈 شرحِ زر اور سونا کی قیمتیں</div>
 <div class="fp">
-<div class="fr">
-<div class="fg"><label>سونا 24K (فی تولہ - روپے)</label><input class="fc" type="number" id="rgold" value="${r.gold24k}" style="direction:ltr"></div>
-<div class="fg"><label>USD (روپے فی ڈالر)</label><input class="fc" type="number" step="0.01" id="rusd" value="${r.usd}" style="direction:ltr"></div>
+<div style="display:flex;align-items:center;gap:12px;background:#f0f7f0;padding:12px 16px;border-radius:var(--r);margin-bottom:16px;border:1px solid #c3e6c3">
+  <span style="font-family:var(--fi);font-size:13px;font-weight:700;color:var(--gd)">ڈیٹا موڈ:</span>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fi);font-size:13px">
+    <input type="radio" name="rmode" value="auto" ${isAuto?'checked':''} onchange="S.ratesMode='auto';render()"> AUTO (GAS API)
+  </label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fi);font-size:13px">
+    <input type="radio" name="rmode" value="manual" ${!isAuto?'checked':''} onchange="S.ratesMode='manual';render()"> MANUAL
+  </label>
+  ${isAuto?'<span style="font-size:11px;color:#2db844;font-family:var(--fi)">✅ GAS سے خودکار — دستی ترمیم کے لیے MANUAL کریں</span>':'<span style="font-size:11px;color:#ff9800;font-family:var(--fi)">✏ دستی موڈ فعال — ذیل میں قیمتیں بھریں</span>'}
 </div>
 <div class="fr">
-<div class="fg"><label>EUR (روپے فی یورو)</label><input class="fc" type="number" step="0.01" id="reur" value="${r.eur}" style="direction:ltr"></div>
-<div class="fg"><label>SAR (روپے فی ریال)</label><input class="fc" type="number" step="0.01" id="rsar" value="${r.sar}" style="direction:ltr"></div>
+<div class="fg"><label>سونا 24K (فی تولہ - روپے)</label><input class="fc" type="number" id="rgold" value="${r.gold24k}" style="direction:ltr" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
+<div class="fg"><label>USD (روپے فی ڈالر)</label><input class="fc" type="number" step="0.01" id="rusd" value="${r.usd}" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
 </div>
 <div class="fr">
-<div class="fg"><label>AED (روپے فی درہم)</label><input class="fc" type="number" step="0.01" id="raed" value="${r.aed}" style="direction:ltr"></div>
-<div class="fg"><label>GBP (روپے فی پاؤنڈ)</label><input class="fc" type="number" step="0.01" id="rgbp" value="${r.gbp}" style="direction:ltr"></div>
+<div class="fg"><label>EUR (روپے فی یورو)</label><input class="fc" type="number" step="0.01" id="reur" value="${r.eur}" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
+<div class="fg"><label>SAR (روپے فی ریال)</label><input class="fc" type="number" step="0.01" id="rsar" value="${r.sar}" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
 </div>
-<div class="fa"><button class="btn-p" onclick="saveRates()">💾 قیمتیں محفوظ کریں</button></div>
+<div class="fr">
+<div class="fg"><label>AED (روپے فی درہم)</label><input class="fc" type="number" step="0.01" id="raed" value="${r.aed}" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
+<div class="fg"><label>GBP (روپے فی پاؤنڈ)</label><input class="fc" type="number" step="0.01" id="rgbp" value="${r.gbp}" ${isAuto?'disabled style="background:#f5f5f5;direction:ltr"':'style="direction:ltr"'}></div>
+</div>
+<div class="fa">
+  <button class="btn-p" onclick="saveRates()" ${isAuto?'disabled style="opacity:.5;cursor:not-allowed"':''}>💾 قیمتیں محفوظ کریں</button>
+  ${isAuto?`<button class="btn-sec" onclick="toast('GAS API سے تازہ کاری ہو رہی ہے...');DB.rates.lastUpdated='';saveDB();fetchLiveRates().then(()=>render())">🔄 ابھی تازہ کریں</button>`:''}
+</div>
 </div>`;
 }
+
+
 
 function rPrayerAdm(){
   const p=DB.prayer;
@@ -1493,9 +1620,9 @@ window.openLink=function(url){
     setTimeout(()=>document.body.removeChild(a),100);
   }catch(e){ window.open(url,'_blank'); }
 }
-window.goHome=()=>{S.viewN=null;S.catF=null;S.srch='';S.staticPg=null;S.artPage=1;document.title='پاکستان نامہ — تازہ ترین خبریں';render()}
-window.setCAT=(id)=>{S.catF=id;S.viewN=null;S.srch='';S.staticPg=null;S.catPage=1;render();window.scrollTo(0,0)}
-window.viewN=(id)=>{S.viewN=id;S.srch='';S.staticPg=null;render();window.scrollTo(0,0);
+window.goHome=()=>{S.viewN=null;S.catF=null;S.srch='';S.staticPg=null;S.artPage=1;history.pushState(null,'',location.pathname);document.title='پاکستان نامہ — تازہ ترین خبریں';render()}
+window.setCAT=(id)=>{S.catF=id;S.viewN=null;S.srch='';S.staticPg=null;S.catPage=1;const c=DB.categories.find(x=>x.id===id);if(c)history.pushState(null,'','#/cat/'+c.slug);render();window.scrollTo(0,0)}
+window.viewN=(id)=>{if(S.viewN!==id){const _n=DB.news.find(x=>x.id===id);if(_n){_n.views++;saveDB();history.pushState(null,'','#/news/'+encodeURIComponent(_n.slug));}}S.viewN=id;S.srch='';S.staticPg=null;render();window.scrollTo(0,0);
   // Update SEO meta tags dynamically
   const n=DB.news.find(x=>x.id===id);
   if(n){
@@ -1528,26 +1655,32 @@ window.doLogin=()=>{
   if(pw===PASS){S.admIn=true;render();}
   else{if(errEl)errEl.textContent='غلط پاس ورڈ — براہ کرم دوبارہ کوشش کریں';}
 }
-window.setPg=(p)=>{S.admPg=p;S.editN=null;S.editC=null;S.editA=null;render()}
+window.setPg=(p)=>{S.admPg=p;S.editN=null;S.editC=null;S.editA=null;S.admSrchQ='';render()}
 
 window.doSrch=()=>{
   const v=document.getElementById('si')?.value?.trim()||'';
   if(!v)return;
-  S.srch=v;S.catF=null;S.viewN=null;S.staticPg=null;
-  const q=v.toLowerCase();
-  const res=DB.news.filter(n=>n.title.includes(v)||n.body.includes(v)||n.tags.toLowerCase().includes(q));
-  const trending=[...DB.news].sort((a,b)=>b.views-a.views).slice(0,5);
-  const app=document.getElementById('app');
-  const inner=document.querySelector('.grid');
-  if(inner){
-    inner.innerHTML=`<div>
-<div class="sec-ttl">🔍 نتائج: "${esc(v)}" <span style="font-weight:400;font-size:13px;color:var(--tm)">(${res.length} خبریں)</span></div>
-<div class="nlist">${res.length?res.map(n=>rLI(n)).join(''):`<div style="text-align:center;padding:50px;color:var(--tm);font-family:var(--fu);font-size:16px">🔍 کوئی نتیجہ نہیں ملا</div>`}</div>
-</div>
-<div class="sb">${rSidebar(trending)}</div>`;
-  }
+  S.srch=v;S.catF=null;S.viewN=null;S.staticPg='_search';
+  render();window.scrollTo(0,0);
 }
 
+window.renderAdmNews=()=>{
+  const tbl=document.querySelector('.dtbl tbody');
+  const q=(S.admSrchQ||'').toLowerCase();
+  if(!tbl)return;
+  const filtered=q?DB.news.filter(n=>n.title.includes(S.admSrchQ)||n.title.toLowerCase().includes(q)):DB.news;
+  tbl.innerHTML=filtered.map(n=>`<tr>
+<td style="font-family:var(--fu);direction:rtl;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')" title="${esc(n.title)}">${esc(n.title.substring(0,38))}...</td>
+<td><span class="badge" style="background:${getCat(n.catId).color}22;color:${getCat(n.catId).color};font-size:10px">${getCat(n.catId).name}</span></td>
+<td style="direction:ltr;font-size:11px;color:var(--tm)">${n.date}</td>
+<td>${n.featured?'⭐':'-'}</td>
+<td style="font-family:var(--fi)">${n.views.toLocaleString()}</td>
+<td><div style="display:flex;gap:5px">
+<button class="btn-s be" onclick="S.editN=DB.news.find(x=>x.id===${n.id});setPg('addNews')">✏</button>
+<button class="btn-s bd" onclick="delN(${n.id})">🗑</button>
+</div></td>
+</tr>`).join('');
+}
 window.autoSlug=()=>{
   const t=document.getElementById('ft')?.value||'';
   const sl=document.getElementById('fsl');
@@ -1617,7 +1750,7 @@ window.delCat=async(id)=>{
 // Save full DB snapshot (authors, categories, breaking, rates, prayer) to GAS
 window._syncMetaToGAS = async function(){
   try{
-    await fetch(GAS_URL, {
+    const res=await fetch(GAS_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain'},
       body: JSON.stringify({
@@ -1630,7 +1763,11 @@ window._syncMetaToGAS = async function(){
         prayer: DB.prayer,
       })
     });
-  }catch(e){ console.log('GAS meta sync error',e); }
+    if(!res.ok) throw new Error('HTTP '+res.status);
+  }catch(e){
+    console.warn('GAS sync failed (data saved locally):', e.message);
+    // Data is saved in localStorage — GAS sync is secondary
+  }
 };
 
 window.saveAuth=async()=>{
@@ -1654,10 +1791,10 @@ window.delAuth=async(id)=>{
 }
 
 window.saveSett=async()=>{
-  DB.settings.siteName=document.getElementById('sn')?.value||DB.settings.siteName;
-  DB.settings.chiefEditor=document.getElementById('se')?.value||DB.settings.chiefEditor;
-  DB.settings.logo=document.getElementById('sl')?.value||'';
-  DB.settings.footerText=document.getElementById('sf')?.value||DB.settings.footerText;
+  const _sn=document.getElementById('sn')?.value?.trim();if(_sn)DB.settings.siteName=_sn;
+  const _se=document.getElementById('se')?.value?.trim();if(_se)DB.settings.chiefEditor=_se;
+  DB.settings.logo=(document.getElementById('sl')?.value||'').trim();
+  const _sf=document.getElementById('sf')?.value?.trim();if(_sf)DB.settings.footerText=_sf;
   const br=document.getElementById('sb')?.value||'';
   DB.breaking=br.split('\n').map(x=>x.trim()).filter(Boolean);
   saveDB();
@@ -1666,12 +1803,13 @@ window.saveSett=async()=>{
 }
 
 window.saveRates=async()=>{
-  DB.rates.gold24k=parseFloat(document.getElementById('rgold')?.value)||DB.rates.gold24k;
-  DB.rates.usd=parseFloat(document.getElementById('rusd')?.value)||DB.rates.usd;
-  DB.rates.eur=parseFloat(document.getElementById('reur')?.value)||DB.rates.eur;
-  DB.rates.sar=parseFloat(document.getElementById('rsar')?.value)||DB.rates.sar;
-  DB.rates.aed=parseFloat(document.getElementById('raed')?.value)||DB.rates.aed;
-  DB.rates.gbp=parseFloat(document.getElementById('rgbp')?.value)||DB.rates.gbp;
+  if(S.ratesMode==='auto'){toast('AUTO موڈ میں ترمیم نہیں — MANUAL موڈ کریں');return;}
+  const g=parseFloat(document.getElementById('rgold')?.value);if(g>0)DB.rates.gold24k=g;
+  const u=parseFloat(document.getElementById('rusd')?.value);if(u>0)DB.rates.usd=u;
+  const e=parseFloat(document.getElementById('reur')?.value);if(e>0)DB.rates.eur=e;
+  const sa=parseFloat(document.getElementById('rsar')?.value);if(sa>0)DB.rates.sar=sa;
+  const a=parseFloat(document.getElementById('raed')?.value);if(a>0)DB.rates.aed=a;
+  const gb=parseFloat(document.getElementById('rgbp')?.value);if(gb>0)DB.rates.gbp=gb;
   DB.rates.lastUpdated=new Date().toLocaleString('ur-PK',{dateStyle:'short',timeStyle:'short'});
   saveDB();
   await window._syncMetaToGAS();
@@ -1701,10 +1839,10 @@ window.refreshPrayer=async()=>{
 }
 
 window.saveSocial=async()=>{
-  DB.settings.fbUrl=document.getElementById('sfb')?.value||DB.settings.fbUrl;
-  DB.settings.twUrl=document.getElementById('stw')?.value||DB.settings.twUrl;
-  DB.settings.waUrl=document.getElementById('swa')?.value||DB.settings.waUrl;
-  DB.settings.igUrl=document.getElementById('sig')?.value||DB.settings.igUrl;
+  DB.settings.fbUrl=(document.getElementById('sfb')?.value||'').trim();
+  DB.settings.twUrl=(document.getElementById('stw')?.value||'').trim();
+  DB.settings.waUrl=(document.getElementById('swa')?.value||'').trim();
+  DB.settings.igUrl=(document.getElementById('sig')?.value||'').trim();
   saveDB();
   await window._syncMetaToGAS();
   toast('سوشل میڈیا لنکس محفوظ اور sync ✓');render()
