@@ -1,1 +1,654 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<title>پاکستان نامہ — تازہ ترین خبریں</title>
+<meta name="description" content="پاکستان نامہ — پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ">
+<meta property="og:site_name" content="پاکستان نامہ">
+<meta property="og:type" content="website">
+<meta property="og:title" content="پاکستان نامہ — تازہ ترین خبریں">
+<meta property="og:description" content="پاکستان اور دنیا کی تازہ ترین خبریں">
+<meta property="og:locale" content="ur_PK">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gd:#0a4a1a;--gm:#1a7a2a;--gl:#2db844;--gp:#e8f5e9;
+  --gold:#c9a84c;--goldl:#f5d78e;
+  --tp:#1a1a1a;--ts:#4a4a4a;--tm:#888;
+  --bg:#f2f4f2;--card:#fff;--bdr:#e0e0e0;
+  --sh:0 2px 12px rgba(0,0,0,0.08);--sh2:0 6px 24px rgba(0,0,0,0.14);
+  --fu:'Noto Nastaliq Urdu',serif;
+  --fi:'Noto Sans Arabic',sans-serif;
+  --r:8px;--rl:14px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fu);direction:rtl;background:var(--bg);color:var(--tp);font-size:16px;min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:var(--fu)}
+.hide{display:none!important}
 
+/* HEADER */
+.hdr{background:linear-gradient(160deg,#041a08 0%,var(--gd) 50%,#0c3a16 100%);color:#fff}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;cursor:pointer}
+.logo-name{font-size:38px;font-weight:700;color:#fff;line-height:1.1;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+.logo-line{width:80px;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:2px auto}
+.logo-editor{font-size:13px;color:var(--goldl);margin-top:4px}
+.hdr-actions{display:flex;gap:8px}
+.hdr-btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:var(--r);font-size:13px;font-family:var(--fi);transition:.2s}
+.hdr-btn:hover{background:rgba(255,255,255,.22)}
+.date-bar{background:rgba(0,0,0,.3);padding:5px 22px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,.75);font-family:var(--fi);border-top:1px solid rgba(255,255,255,.08)}
+
+/* BREAKING NEWS */
+.brk{background:linear-gradient(90deg,#8b0000,#c0392b,#8b0000);color:#fff;display:flex;align-items:center;height:42px;overflow:hidden;border-bottom:2px solid #7f0000}
+.brk-lbl{background:#5a0000;padding:0 20px;height:100%;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;white-space:nowrap;font-family:var(--fi);border-left:3px solid var(--gold);flex-shrink:0}
+.brk-dot{width:8px;height:8px;background:#ff4444;border-radius:50%;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+.brk-scroll{flex:1;overflow:hidden;position:relative}
+.brk-inner{display:flex;align-items:center;height:42px;white-space:nowrap;animation:ticker 50s linear infinite}
+.brk-inner:hover{animation-play-state:paused}
+.brk-item{padding:0 22px;font-size:14px;font-family:var(--fu);cursor:pointer}
+.brk-sep{color:var(--goldl);padding:0 10px;opacity:.7;font-size:12px}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* NAV */
+.nav{background:var(--gm);position:sticky;top:0;z-index:200;box-shadow:0 3px 12px rgba(0,0,0,.25)}
+.nav-inner{display:flex;align-items:center;max-width:1240px;margin:0 auto;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-link{display:block;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;font-family:var(--fu);border-bottom:3px solid transparent;transition:.2s;white-space:nowrap;cursor:pointer}
+.nav-link:hover,.nav-link.act{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.1)}
+
+/* LAYOUT */
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px}
+.grid{display:grid;grid-template-columns:1fr 280px;gap:24px}
+
+/* SECTION TITLE */
+.sec-ttl{font-size:19px;font-weight:700;color:var(--gd);border-right:4px solid var(--gl);padding-right:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.sec-ttl a{font-size:12px;color:var(--gm);font-weight:400;font-family:var(--fi);cursor:pointer}
+
+/* FEATURED GRID */
+.feat-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:28px}
+.feat-side{display:flex;flex-direction:column;gap:14px}
+
+/* NEWS CARD */
+.ncard{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:.2s;position:relative}
+.ncard:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.ncard-img{width:100%;overflow:hidden;background:#eee;display:flex;align-items:center;justify-content:center}
+.ncard-img img{width:100%;height:100%;object-fit:cover;display:block;transition:.3s}
+.ncard:hover .ncard-img img{transform:scale(1.04)}
+.ncard-img-main{height:270px}
+.ncard-img-side{height:145px}
+.ncard-img-sm{height:155px}
+.ncard-body{padding:14px}
+.cat-badge{display:inline-block;color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:8px;font-family:var(--fi);font-weight:600}
+.ncard-ttl{font-family:var(--fu);font-weight:600;line-height:1.7;color:var(--tp);margin-bottom:6px}
+.ncard-ttl-lg{font-size:19px}
+.ncard-ttl-sm{font-size:14px}
+.ncard-meta{font-size:11px;color:var(--tm);font-family:var(--fi);direction:ltr;text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* NEWS LIST */
+.nlist{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.nli{display:flex;gap:12px;background:var(--card);border-radius:var(--r);padding:12px;box-shadow:0 1px 5px rgba(0,0,0,.05);cursor:pointer;transition:.2s;align-items:flex-start}
+.nli:hover{box-shadow:var(--sh);transform:translateX(-2px)}
+.nli-img{width:100px;height:72px;border-radius:6px;flex-shrink:0;overflow:hidden;background:#eee;display:flex;align-items:center;justify-content:center}
+.nli-img img{width:100%;height:100%;object-fit:cover}
+.nli-body{flex:1;min-width:0}
+.nli-ttl{font-family:var(--fu);font-size:15px;font-weight:600;line-height:1.55;margin-bottom:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.nli-meta{font-size:11px;color:var(--tm);font-family:var(--fi);direction:ltr;text-align:right}
+
+/* 3 COL GRID */
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+
+/* SIDEBAR */
+.sb{display:flex;flex-direction:column;gap:18px}
+.sw{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+.sw-ttl{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:11px 15px;font-size:14px;font-family:var(--fu);font-weight:600;display:flex;align-items:center;gap:6px}
+.sw-body{padding:13px}
+.pop-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;align-items:flex-start;transition:.15s}
+.pop-item:last-child{border:none}
+.pop-item:hover{background:#fafff9}
+.pop-n{background:var(--gl);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--fi);flex-shrink:0;font-weight:700;margin-top:2px}
+.pop-tx{font-family:var(--fu);font-size:13px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* CATEGORY PILLS */
+.cat-pills{display:flex;flex-wrap:wrap;gap:8px;padding:13px}
+.cat-pill{padding:7px 14px;border-radius:20px;color:#fff;font-size:13px;font-family:var(--fu);cursor:pointer;transition:.2s;border:none}
+.cat-pill:hover{opacity:.85;transform:translateY(-1px)}
+
+/* PRAYER WIDGET */
+.prayer-w{background:linear-gradient(145deg,#0d3b6e,#1a5c8a);color:#fff;border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+.prayer-hdr{padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between}
+.prayer-hdr h4{font-family:var(--fu);font-size:14px}
+.prayer-city{font-family:var(--fi);font-size:11px;background:rgba(255,255,255,.15);padding:2px 10px;border-radius:10px}
+.prayer-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px}
+.pt-cell{background:rgba(255,255,255,.12);border-radius:8px;padding:8px 4px;text-align:center}
+.pt-cell.active{background:rgba(201,168,76,.35);border:1px solid rgba(201,168,76,.5)}
+.pt-name{font-family:var(--fu);font-size:11px;opacity:.85}
+.pt-time{font-family:var(--fi);font-size:12px;font-weight:700;margin-top:3px;direction:ltr}
+
+/* RATES WIDGET */
+.gold-bar{background:linear-gradient(135deg,#9a7a2c,var(--gold));color:#fff;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-radius:8px;margin-bottom:8px}
+.gold-bar .lbl{font-family:var(--fu);font-size:13px}
+.gold-bar .val{font-family:var(--fi);font-size:16px;font-weight:700;direction:ltr}
+.rate-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5;font-family:var(--fi)}
+.rate-item:last-child{border:none}
+.rate-lbl{font-size:13px;color:var(--ts);display:flex;align-items:center;gap:6px}
+.rate-val{font-size:14px;font-weight:700;color:var(--gd);direction:ltr}
+
+/* FOOTER */
+.ftr{background:linear-gradient(160deg,#041a08,var(--gd));color:#fff;padding:36px 22px 20px}
+.ftr-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px;max-width:1240px;margin:0 auto}
+.ftr h4{font-family:var(--fu);font-size:16px;color:var(--goldl);margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px}
+.ftr p,.ftr a{font-size:13px;color:rgba(255,255,255,.7);line-height:2;font-family:var(--fu)}
+.ftr a:hover{color:var(--goldl)}
+.ftr-links{display:flex;flex-direction:column;gap:4px}
+.social-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.soc-btn{padding:7px 14px;border-radius:20px;border:none;color:#fff;font-size:12px;font-family:var(--fi);cursor:pointer;font-weight:600}
+.ftr-bottom{text-align:center;padding-top:20px;margin-top:20px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(255,255,255,.5);font-family:var(--fi);max-width:1240px;margin:20px auto 0}
+
+/* SEARCH OVERLAY */
+.srch-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding-top:80px}
+.srch-box{background:#fff;border-radius:var(--rl);padding:20px;width:90%;max-width:600px;box-shadow:var(--sh2)}
+.srch-input{width:100%;padding:12px 16px;border:2px solid var(--gm);border-radius:var(--r);font-family:var(--fu);font-size:16px;outline:none;direction:rtl}
+.srch-results{margin-top:12px;max-height:400px;overflow-y:auto}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;font-family:var(--fi);color:var(--tm)}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--gm);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:10px 22px;border-radius:22px;font-family:var(--fi);font-size:13px;opacity:0;transition:.3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .ftr-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .feat-grid{grid-template-columns:1fr}
+  .cards-3{grid-template-columns:1fr}
+  .prayer-grid{grid-template-columns:repeat(3,1fr)}
+  .logo-name{font-size:26px}
+  .hdr-top{padding:10px 12px}
+  .wrap{padding:12px 10px}
+  .ncard-img-main{height:200px}
+  .ftr-grid{grid-template-columns:1fr}
+}
+@media(max-width:400px){
+  .logo-name{font-size:22px}
+  .nli-img{width:80px;height:60px}
+  .prayer-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading"><div class="spinner"></div>لوڈ ہو رہا ہے...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/db.js"></script>
+<script>
+// =====================
+// STATE
+// =====================
+let STATE = {
+  news: [],
+  featured: [],
+  categories: [],
+  breaking: [],
+  settings: {},
+  prayer: { fajr:'4:45 ص', zuhr:'12:22 م', asr:'4:10 م', maghrib:'7:28 م', isha:'8:58 م', city:'بہاولنگر' },
+  rates: { gold24k:247800, usd:278.5, eur:302.3, sar:74.2, aed:75.8, gbp:352.1 },
+  catFilter: null,
+  srchOpen: false,
+  srchQ: '',
+  page: 1
+};
+
+// =====================
+// INIT
+// =====================
+async function init() {
+  try {
+    const [news, featured, cats, breaking, settings] = await Promise.all([
+      getNews(30),
+      getFeaturedNews(),
+      getCategories(),
+      getBreakingNews(),
+      getSettings()
+    ]);
+    STATE.news = news;
+    STATE.featured = featured;
+    STATE.categories = cats;
+    STATE.breaking = breaking;
+    STATE.settings = settings;
+    render();
+    // Handle URL hash for article link
+    if(location.hash.startsWith('#/news/')) {
+      const slug = location.hash.replace('#/news/','');
+      window.location.href = 'article.html?slug=' + encodeURIComponent(slug);
+    }
+  } catch(e) {
+    console.error(e);
+    document.getElementById('app').innerHTML = '<div class="loading">خرابی — دوبارہ کوشش کریں</div>';
+  }
+}
+
+// =====================
+// RENDER
+// =====================
+function render() {
+  const s = STATE.settings;
+  const siteName = s.siteName || 'پاکستان نامہ';
+  document.title = siteName + ' — تازہ ترین خبریں';
+
+  document.getElementById('app').innerHTML = `
+    ${renderHeader(siteName, s)}
+    ${renderBreaking()}
+    ${renderNav()}
+    <div class="wrap">
+      <div class="grid">
+        <div>
+          ${STATE.catFilter ? renderCatPage() : renderHome()}
+        </div>
+        <div class="sb">
+          ${renderPrayer()}
+          ${renderCategories()}
+          ${renderRates()}
+          ${renderPopular()}
+        </div>
+      </div>
+    </div>
+    ${renderFooter(siteName, s)}
+    ${STATE.srchOpen ? renderSearch() : ''}
+  `;
+}
+
+// =====================
+// HEADER
+// =====================
+function renderHeader(siteName, s) {
+  const today = new Date().toLocaleDateString('ur-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return `
+  <div class="hdr">
+    <div class="hdr-top">
+      <div style="min-width:100px"></div>
+      <div class="logo-wrap" onclick="clearFilter()">
+        <div class="logo-name">${siteName}</div>
+        <div class="logo-line"></div>
+        <div class="logo-editor" style="font-family:'Noto Nastaliq Urdu',serif">
+          <span style="opacity:.7;font-size:12px">مدیرِ اعلیٰ: </span>${s.chiefEditor||''}
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button class="hdr-btn" onclick="openSearch()">🔍</button>
+        <button class="hdr-btn" onclick="window.location.href='admin.html'" style="font-family:'Noto Sans Arabic',sans-serif">Admin</button>
+      </div>
+    </div>
+    <div class="date-bar">
+      <span style="font-family:'Noto Nastaliq Urdu',serif">${today}</span>
+      <span style="font-family:'Noto Sans Arabic',sans-serif;font-size:11px;opacity:.6">Pakistan Standard Time</span>
+    </div>
+  </div>`;
+}
+
+// =====================
+// BREAKING NEWS
+// =====================
+function renderBreaking() {
+  const items = STATE.breaking.length ? STATE.breaking.map(b => typeof b === 'string' ? b : b.text) : ['پاکستان نامہ میں خوش آمدید'];
+  const doubled = [...items, ...items];
+  return `
+  <div class="brk">
+    <div class="brk-lbl">
+      <div class="brk-dot"></div>
+      <span style="font-family:'Noto Sans Arabic',sans-serif">Breaking</span>
+    </div>
+    <div class="brk-scroll">
+      <div class="brk-inner">
+        ${doubled.map(t => `<span class="brk-item">${t}</span><span class="brk-sep">◆</span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// =====================
+// NAV
+// =====================
+function renderNav() {
+  const cats = STATE.categories;
+  return `
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link ${!STATE.catFilter ? 'act' : ''}" onclick="clearFilter()">🏠 ہوم</a>
+      ${cats.map(c => `<a class="nav-link ${STATE.catFilter===c.id ? 'act' : ''}" onclick="filterCat(${c.id})">${c.icon||''} ${c.name}</a>`).join('')}
+    </div>
+  </nav>`;
+}
+
+// =====================
+// HOME
+// =====================
+function renderHome() {
+  const featured = STATE.featured.length ? STATE.featured : STATE.news.slice(0,5);
+  const latest = STATE.news.slice(0,12);
+  const more = STATE.news.slice(12,21);
+
+  return `
+    ${renderFeatured(featured)}
+    <div class="sec-ttl">
+      <span>📰 تازہ ترین خبریں</span>
+      <a onclick="window.scrollTo(0,99999)">مزید دیکھیں ›</a>
+    </div>
+    <div class="nlist">
+      ${latest.map(n => renderListItem(n)).join('')}
+    </div>
+    ${more.length ? `
+    <div class="sec-ttl"><span>📌 مزید خبریں</span></div>
+    <div class="cards-3">
+      ${more.map(n => renderSmallCard(n)).join('')}
+    </div>` : ''}
+  `;
+}
+
+// =====================
+// FEATURED
+// =====================
+function renderFeatured(items) {
+  if(!items.length) return '<div class="loading">کوئی خبر نہیں</div>';
+  const main = items[0];
+  const side = items.slice(1,3);
+  return `
+  <div class="sec-ttl"><span>⭐ نمایاں خبریں</span></div>
+  <div class="feat-grid">
+    <div class="ncard" onclick="openNews('${main.slug}')">
+      <div class="ncard-img ncard-img-main">
+        ${main.image ? `<img src="${main.image}" alt="${esc(main.title)}" loading="lazy">` : `<div style="font-size:60px;opacity:.15">📰</div>`}
+      </div>
+      <div class="ncard-body">
+        ${main.categories ? `<span class="cat-badge" style="background:${main.categories.color||'#2db844'}">${main.categories.icon||''} ${main.categories.name}</span>` : ''}
+        <div class="ncard-ttl ncard-ttl-lg">${esc(main.title)}</div>
+        <div class="ncard-meta">
+          <span>${formatDateUrdu(main.published_at)}</span>
+          <span>👁 ${main.views||0}</span>
+        </div>
+      </div>
+    </div>
+    <div class="feat-side">
+      ${side.map(n => `
+      <div class="ncard" onclick="openNews('${n.slug}')">
+        <div class="ncard-img ncard-img-side">
+          ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:40px;opacity:.15">📰</div>`}
+        </div>
+        <div class="ncard-body">
+          ${n.categories ? `<span class="cat-badge" style="background:${n.categories.color||'#2db844'}">${n.categories.icon||''} ${n.categories.name}</span>` : ''}
+          <div class="ncard-ttl ncard-ttl-sm">${esc(n.title)}</div>
+          <div class="ncard-meta"><span>${formatDateUrdu(n.published_at)}</span></div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// =====================
+// LIST ITEM
+// =====================
+function renderListItem(n) {
+  return `
+  <div class="nli" onclick="openNews('${n.slug}')">
+    <div class="nli-img">
+      ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:28px;opacity:.2">📰</div>`}
+    </div>
+    <div class="nli-body">
+      ${n.categories ? `<span class="cat-badge" style="background:${n.categories.color||'#2db844'};font-size:10px">${n.categories.icon||''} ${n.categories.name}</span>` : ''}
+      <div class="nli-ttl">${esc(n.title)}</div>
+      <div class="nli-meta">${formatDateUrdu(n.published_at)} · 👁 ${n.views||0}</div>
+    </div>
+  </div>`;
+}
+
+// =====================
+// SMALL CARD
+// =====================
+function renderSmallCard(n) {
+  return `
+  <div class="ncard" onclick="openNews('${n.slug}')">
+    <div class="ncard-img ncard-img-sm">
+      ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:36px;opacity:.15">📰</div>`}
+    </div>
+    <div class="ncard-body">
+      ${n.categories ? `<span class="cat-badge" style="background:${n.categories.color||'#2db844'}">${n.categories.icon||''} ${n.categories.name}</span>` : ''}
+      <div class="ncard-ttl ncard-ttl-sm">${esc(n.title)}</div>
+      <div class="ncard-meta"><span>${formatDateUrdu(n.published_at)}</span></div>
+    </div>
+  </div>`;
+}
+
+// =====================
+// CATEGORY PAGE
+// =====================
+function renderCatPage() {
+  const cat = STATE.categories.find(c => c.id === STATE.catFilter);
+  const items = STATE.news.filter(n => n.cat_id === STATE.catFilter);
+  return `
+  <div style="background:${cat?.color||'#2db844'};color:#fff;padding:16px;border-radius:var(--rl);margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:30px">${cat?.icon||'📰'}</span>
+    <div>
+      <h2 style="font-family:'Noto Nastaliq Urdu',serif;font-size:20px">${cat?.name||''}</h2>
+      <div style="font-family:'Noto Sans Arabic',sans-serif;font-size:12px;opacity:.8">${items.length} خبریں</div>
+    </div>
+  </div>
+  <div class="nlist">
+    ${items.length ? items.map(n => renderListItem(n)).join('') : '<div class="loading">اس زمرے میں کوئی خبر نہیں</div>'}
+  </div>`;
+}
+
+// =====================
+// SIDEBAR WIDGETS
+// =====================
+function renderPrayer() {
+  const p = STATE.prayer;
+  const prayers = [
+    {name:'فجر',time:p.fajr},
+    {name:'ظہر',time:p.zuhr},
+    {name:'عصر',time:p.asr},
+    {name:'مغرب',time:p.maghrib},
+    {name:'عشاء',time:p.isha}
+  ];
+  return `
+  <div class="prayer-w">
+    <div class="prayer-hdr">
+      <h4>🕌 اوقاتِ نماز</h4>
+      <span class="prayer-city">${p.city||'بہاولنگر'}</span>
+    </div>
+    <div class="prayer-grid">
+      ${prayers.map(pr => `
+      <div class="pt-cell">
+        <div class="pt-name">${pr.name}</div>
+        <div class="pt-time">${pr.time}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderCategories() {
+  return `
+  <div class="sw">
+    <div class="sw-ttl">🗂 زمرے</div>
+    <div class="cat-pills">
+      ${STATE.categories.map(c => `
+      <button class="cat-pill" style="background:${c.color}" onclick="filterCat(${c.id})">
+        ${c.icon||''} ${c.name}
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderRates() {
+  const r = STATE.rates;
+  return `
+  <div class="sw">
+    <div class="sw-ttl">💰 ریٹس</div>
+    <div class="sw-body">
+      <div class="gold-bar">
+        <span class="lbl">🥇 سونا 24K</span>
+        <span class="val">₨ ${Number(r.gold24k).toLocaleString()}</span>
+      </div>
+      ${[
+        {flag:'🇺🇸',name:'USD',val:r.usd},
+        {flag:'🇸🇦',name:'SAR',val:r.sar},
+        {flag:'🇦🇪',name:'AED',val:r.aed},
+        {flag:'🇬🇧',name:'GBP',val:r.gbp},
+      ].map(x => `
+      <div class="rate-item">
+        <span class="rate-lbl">${x.flag} ${x.name}</span>
+        <span class="rate-val">₨ ${Number(x.val).toFixed(2)}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderPopular() {
+  const top = [...STATE.news].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+  return `
+  <div class="sw">
+    <div class="sw-ttl">🔥 مقبول خبریں</div>
+    <div class="sw-body">
+      ${top.map((n,i) => `
+      <div class="pop-item" onclick="openNews('${n.slug}')">
+        <div class="pop-n">${i+1}</div>
+        <div class="pop-tx">${esc(n.title)}</div>
+      </div>`).join('') || '<div style="font-family:\'Noto Sans Arabic\',sans-serif;font-size:12px;color:#aaa;text-align:center;padding:10px">ابھی کوئی خبر نہیں</div>'}
+    </div>
+  </div>`;
+}
+
+// =====================
+// FOOTER
+// =====================
+function renderFooter(siteName, s) {
+  return `
+  <footer class="ftr">
+    <div class="ftr-grid">
+      <div>
+        <h4>${siteName}</h4>
+        <p>پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ</p>
+        <div class="social-row">
+          ${s.fbUrl ? `<button class="soc-btn" style="background:#1877f2" onclick="window.open('${s.fbUrl}')">Facebook</button>` : ''}
+          ${s.waUrl ? `<button class="soc-btn" style="background:#25d366" onclick="window.open('${s.waUrl}')">WhatsApp</button>` : ''}
+          ${s.twUrl ? `<button class="soc-btn" style="background:#1da1f2" onclick="window.open('${s.twUrl}')">Twitter</button>` : ''}
+        </div>
+      </div>
+      <div>
+        <h4>اہم صفحات</h4>
+        <div class="ftr-links">
+          <a onclick="clearFilter()">ہوم پیج</a>
+          <a onclick="window.location.href='admin.html'">ایڈمن پینل</a>
+          ${STATE.categories.slice(0,4).map(c => `<a onclick="filterCat(${c.id})">${c.name}</a>`).join('')}
+        </div>
+      </div>
+      <div>
+        <h4>رابطہ</h4>
+        <div class="ftr-links">
+          <a>مدیرِ اعلیٰ: ${s.chiefEditor||''}</a>
+        </div>
+      </div>
+    </div>
+    <div class="ftr-bottom">${s.footerText||'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔'}</div>
+  </footer>`;
+}
+
+// =====================
+// SEARCH
+// =====================
+function renderSearch() {
+  const q = STATE.srchQ.toLowerCase();
+  const results = q.length > 1 ? STATE.news.filter(n =>
+    n.title.toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q)
+  ).slice(0,10) : [];
+  return `
+  <div class="srch-overlay" onclick="closeSearch(event)">
+    <div class="srch-box">
+      <input class="srch-input" type="text" placeholder="خبر تلاش کریں..." value="${esc(STATE.srchQ)}"
+        oninput="STATE.srchQ=this.value;renderSearchResults()"
+        onkeydown="if(event.key==='Escape')closeSearch()">
+      <div id="srch-res" class="srch-results">
+        ${results.map(n => renderListItem(n)).join('') || (q.length > 1 ? '<div class="loading">کوئی نتیجہ نہیں</div>' : '')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSearchResults() {
+  const q = STATE.srchQ.toLowerCase();
+  const results = q.length > 1 ? STATE.news.filter(n =>
+    n.title.toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q)
+  ).slice(0,10) : [];
+  const el = document.getElementById('srch-res');
+  if(el) el.innerHTML = results.map(n => renderListItem(n)).join('') || (q.length>1?'<div class="loading">کوئی نتیجہ نہیں</div>':'');
+}
+
+// =====================
+// ACTIONS
+// =====================
+function openNews(slug) {
+  window.location.href = 'article.html?slug=' + encodeURIComponent(slug);
+}
+
+function filterCat(id) {
+  STATE.catFilter = id;
+  window.scrollTo(0,0);
+  render();
+}
+
+function clearFilter() {
+  STATE.catFilter = null;
+  render();
+}
+
+function openSearch() {
+  STATE.srchOpen = true;
+  STATE.srchQ = '';
+  render();
+  setTimeout(()=>document.querySelector('.srch-input')?.focus(),100);
+}
+
+function closeSearch(e) {
+  if(!e || e.target.classList.contains('srch-overlay')) {
+    STATE.srchOpen = false;
+    render();
+  }
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// =====================
+// START
+// =====================
+window.addEventListener('load', function() {
+  if(typeof getNews !== 'undefined') {
+    init();
+  } else {
+    console.error('db.js load nahi hua');
+    document.getElementById('app').innerHTML = '<div class="loading">Connection error — refresh karein</div>';
+  }
+});
+</script>
+</body>
+</html>
