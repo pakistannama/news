@@ -132,8 +132,7 @@ async function loadFromGAS(){
     render();
     setTimeout(()=>handleRoute(),300);
   }catch(e){
-    console.log('GAS load error',e);
-    // Incognito / network error — render with defaults
+    // Incognito / network error — silently render with defaults, no error shown
     render();
     setTimeout(()=>handleRoute(),300);
   }
@@ -610,10 +609,10 @@ const DEFAULT_DB = {
     logo:'',
     footerText:'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔',
     adsenseId:'',
-    fbUrl:'https://facebook.com/pakistannamaa',  // ← اپنا Facebook page URL یہاں لکھیں
-    twUrl:'https://twitter.com/pakistannamaa',   // ← اپنا Twitter/X URL
-    waUrl:'https://wa.me/923001234567',           // ← اپنا WhatsApp نمبر
-    igUrl:'https://instagram.com/pakistannamaa', // ← اپنا Instagram URL
+    fbUrl:'',
+    twUrl:'',
+    waUrl:'',
+    igUrl:'',
   },
   categories:[
     {id:1,name:'پاکستان',slug:'pakistan',color:'#2db844',icon:'🇵🇰'},
@@ -1268,7 +1267,7 @@ ${s.igUrl?`<button class="soc-btn" style="background:linear-gradient(45deg,#f094
 <li><a onclick="openStatic('privacy')">پرائیویسی پالیسی</a></li>
 <li><a onclick="openStatic('sitemap')">سائٹ میپ</a></li>
 </ul>
-<div class="ftr-addr">📍 لاہور، پنجاب، پاکستان<br>📧 info@pakistannamaa.pk</div>
+<div class="ftr-addr">📍 بہاولنگر، پنجاب، پاکستان<br>📞 0300-2223344<br>📧 pakistannama58@gmail.com</div>
 </div>
 </div>
 <div class="ftr-btm">${esc(s.footerText)} | ${esc(s.chiefEditor)}
