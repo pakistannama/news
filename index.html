@@ -254,6 +254,13 @@ button{cursor:pointer}
 .ncard-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s;display:block}
 .ncard:hover .ncard-img img{transform:scale(1.04)}
 .ncard-img .placeholder{font-size:44px;opacity:.25}
+/* Card image height classes — CSS so media queries can override */
+.ncard-img-main{height:260px}
+.ncard-img-side{height:140px}
+.ncard-img-small{height:150px}
+/* Card title size classes */
+.ncard-ttl-main{font-size:19px}
+.ncard-ttl-sm{font-size:14px}
 .ncard-body{padding:14px}
 .cat-badge{display:inline-block;color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:8px;font-family:var(--fi);font-weight:600;letter-spacing:.3px}
 .ncard-ttl{font-family:var(--fu);font-weight:600;line-height:1.65;color:var(--tp);margin-bottom:6px}
@@ -433,8 +440,10 @@ button{cursor:pointer}
 @media(max-width:768px){
   .grid{grid-template-columns:1fr!important;gap:16px}
   .feat-grid{grid-template-columns:1fr!important}
-  .feat-side{flex-direction:column!important}
-  .feat-side .ncard{flex:unset!important;min-width:unset!important}
+  .feat-side{flex-direction:column!important;gap:10px!important}
+  .feat-side .ncard{flex:unset!important;min-width:unset!important;width:100%!important}
+  .cards-3col{grid-template-columns:1fr 1fr!important}
+  .ncard-img-small{height:130px!important}
   .sb{width:100%!important}
   .wrap{padding:12px 10px}
   /* .nli stays row — handled in 640px block */
@@ -486,10 +495,10 @@ button{cursor:pointer}
 /* ===== RESPONSIVE CARDS 3-COL → 1-COL ===== */
 .cards-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 
-/* ===== IMPROVED MOBILE STYLES ===== */
+/* ===== MOBILE — 640px and below ===== */
 @media(max-width:640px){
   /* Header */
-  .hdr-top{padding:10px 12px;flex-wrap:nowrap}
+  .hdr-top{padding:10px 12px}
   .hdr-left{display:none!important}
   .hdr-right{min-width:unset!important;flex-shrink:0}
   .logo-text{font-size:22px!important}
@@ -501,25 +510,33 @@ button{cursor:pointer}
   .brk-lbl{min-width:80px!important;font-size:11px!important;padding:0 10px!important}
   .brk-item{font-size:12px!important;padding:0 14px!important}
 
-  /* Main layout */
+  /* Layout */
   .wrap{padding:8px!important}
   .grid{grid-template-columns:1fr!important;gap:12px!important}
 
-  /* Featured news grid */
-  .feat-grid{grid-template-columns:1fr!important}
-  .feat-side{flex-direction:column!important}
+  /* Featured grid: 1 column, all cards full width */
+  .feat-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .feat-side{flex-direction:column!important;gap:10px!important}
   .feat-side .ncard{flex:unset!important;min-width:unset!important;width:100%!important}
 
-  /* 3-col cards → 1-col on mobile */
+  /* Card image heights on mobile */
+  .ncard-img-main{height:200px!important}
+  .ncard-img-side{height:180px!important}
+  .ncard-img-small{height:170px!important}
+  .ncard-ttl-main{font-size:16px!important}
+  .ncard-ttl-sm{font-size:14px!important}
+  .ncard-body{padding:10px!important}
+
+  /* 3-col → 1-col on mobile */
   .cards-3col{grid-template-columns:1fr!important;gap:8px!important}
 
-  /* News list items — horizontal layout maintained but tighter */
-  .nli{padding:10px!important;gap:10px!important}
-  .nli-img{width:88px!important;height:68px!important;flex-shrink:0!important}
-  .nli-ttl{font-size:14px!important;-webkit-line-clamp:3!important}
-  .nli-meta{font-size:10px!important;margin-top:4px}
+  /* News list items */
+  .nli{padding:10px!important;gap:10px!important;align-items:center!important}
+  .nli-img{width:90px!important;height:68px!important;flex-shrink:0!important}
+  .nli-ttl{font-size:14px!important;-webkit-line-clamp:2!important}
+  .nli-meta{font-size:10px!important;margin-top:3px}
 
-  /* Article page */
+  /* Article */
   .art-wrap{padding:14px!important;border-radius:8px!important}
   .art-wrap h1{font-size:18px!important;line-height:1.6!important}
   .art-hero{height:200px!important;border-radius:6px!important}
@@ -527,11 +544,11 @@ button{cursor:pointer}
   .art-meta{gap:8px!important;font-size:11px!important}
   .back-btn{font-size:12px!important;padding:7px 14px!important}
 
-  /* Share buttons — wrap nicely */
+  /* Share buttons */
   .share-row{gap:6px!important;padding-top:12px!important}
   .sh-btn{padding:7px 12px!important;font-size:11px!important;border-radius:16px!important}
 
-  /* Category page header */
+  /* Category header */
   .cat-hdr{padding:14px!important;gap:10px!important}
   .cat-hdr h2{font-size:18px!important}
   .cat-hdr .cat-icon{font-size:24px!important}
@@ -539,7 +556,6 @@ button{cursor:pointer}
   /* Sidebar */
   .sb{width:100%!important}
   .prayer-grid{grid-template-columns:1fr 1fr!important}
-  .pop-tx{font-size:13px}
 
   /* Footer */
   .ftr-grid{grid-template-columns:1fr!important}
@@ -550,18 +566,24 @@ button{cursor:pointer}
   /* Section titles */
   .sec-ttl{font-size:15px!important}
 
-  /* Pagination */
-  .pg{gap:5px}
-  .pg-btn{padding:6px 12px!important;font-size:12px!important}
-
   /* Search bar */
   .srch-bar{padding:10px 12px}
   .srch-bar input{font-size:14px}
   .srch-bar button{padding:9px 14px!important;font-size:12px!important}
 }
 
+/* ===== MOBILE — 380px and below (small phones) ===== */
 @media(max-width:380px){
   .logo-text{font-size:19px!important}
+  .ncard-img-main{height:170px!important}
+  .ncard-img-side{height:150px!important}
+  .ncard-img-small{height:150px!important}
+  .art-hero{height:160px!important}
+  .nli-img{width:76px!important;height:60px!important}
+  .sh-btn{padding:6px 9px!important;font-size:10px!important}
+  .ncard-body{padding:8px!important}
+  .nli-ttl{font-size:13px!important}
+}
   .art-hero{height:170px!important}
   .nli-img{width:76px!important;height:60px!important}
   .cards-3col{grid-template-columns:1fr!important}
@@ -1017,15 +1039,16 @@ ${DB.categories.map(c=>`<div onclick="setCAT(${c.id})" style="display:flex;justi
 // ======================================================
 function rCard(n,sz){
   const cat=getCat(n.catId);
-  const h=sz==='main'?'280px':sz==='small'?'155px':'145px';
-  const ts=sz==='main'?'19px':'14px';
-  return`<div class="ncard" onclick="viewN(${n.id})">
-<div class="ncard-img" style="height:${h};background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
-${n.image?`<img src="${escUrl(n.image)}" loading="lazy">`:`<span class="placeholder">📰</span>`}
+  // Use CSS classes for height — NOT inline styles (inline blocks media queries)
+  const imgCls=sz==='main'?'ncard-img-main':sz==='small'?'ncard-img-small':'ncard-img-side';
+  const ttlCls=sz==='main'?'ncard-ttl-main':'ncard-ttl-sm';
+  return`<div class="ncard ncard-${sz}" onclick="viewN(${n.id})">
+<div class="ncard-img ${imgCls}" style="background:linear-gradient(135deg,${cat.color}20,${cat.color}40)">
+${n.image?`<img src="${escUrl(n.image)}" loading="lazy" alt="${esc(n.title)}">`:`<span class="placeholder">📰</span>`}
 </div>
 <div class="ncard-body">
 <span class="cat-badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span>
-<div class="ncard-ttl" style="font-size:${ts}">${esc(n.title)}</div>
+<div class="ncard-ttl ${ttlCls}">${esc(n.title)}</div>
 <div class="ncard-meta"><span>${fmtDate(n.date)}</span><span>${getAuth(n.author).name}</span><span class="views-badge">👁 ${n.views.toLocaleString()}</span></div>
 </div></div>`;
 }
