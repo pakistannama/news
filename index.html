@@ -230,6 +230,21 @@ async function init() {
     STATE.categories = cats;
     STATE.breaking = breaking;
     STATE.settings = settings;
+
+    // Prayer timings from settings
+    if(settings.fajr)    STATE.prayer.fajr    = settings.fajr;
+    if(settings.zuhr)    STATE.prayer.zuhr    = settings.zuhr;
+    if(settings.asr)     STATE.prayer.asr     = settings.asr;
+    if(settings.maghrib) STATE.prayer.maghrib = settings.maghrib;
+    if(settings.isha)    STATE.prayer.isha    = settings.isha;
+
+    // Currency rates from settings
+    if(settings.usd) STATE.rates.usd = settings.usd;
+    if(settings.sar) STATE.rates.sar = settings.sar;
+    if(settings.gbp) STATE.rates.gbp = settings.gbp;
+    if(settings.eur) STATE.rates.eur = settings.eur;
+    if(settings.aed) STATE.rates.aed = settings.aed;
+
     render();
     // Handle URL hash for article link
     if(location.hash.startsWith('#/news/')) {
@@ -642,24 +657,12 @@ function toast(m) {
 // START
 // =====================
 window.addEventListener('load', function() {
-  let attempts = 0;
-  const maxAttempts = 20;
-  function tryInit() {
-    attempts++;
-    if (typeof getNews !== 'undefined' && typeof getDb !== 'undefined' && getDb() !== null) {
-      init();
-    } else if (attempts < maxAttempts) {
-      setTimeout(tryInit, 250);
-    } else {
-      document.getElementById('app').innerHTML = `
-        <div class="loading">
-          <div style="font-size:40px;margin-bottom:12px">⚠️</div>
-          <div>Connection error — please refresh karein</div>
-          <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#1a7a2a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">🔄 Refresh</button>
-        </div>`;
-    }
+  if(typeof getNews !== 'undefined') {
+    init();
+  } else {
+    console.error('db.js load nahi hua');
+    document.getElementById('app').innerHTML = '<div class="loading">Connection error — refresh karein</div>';
   }
-  setTimeout(tryInit, 500);
 });
 </script>
 </body>
