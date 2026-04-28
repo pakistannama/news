@@ -362,22 +362,22 @@ body{font-family:var(--fi);background:var(--bg);color:var(--tp);min-height:100vh
       <p>ایڈمن پینل</p>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" onclick="showSection('dashboard')">
+      <div class="nav-item active" data-sec="dashboard" onclick="showSection('dashboard',this)">
         <span class="nav-icon">📊</span> ڈیش بورڈ
       </div>
-      <div class="nav-item" onclick="showSection('news')">
+      <div class="nav-item" data-sec="news" onclick="showSection('news',this)">
         <span class="nav-icon">📰</span> خبریں
       </div>
-      <div class="nav-item" onclick="showSection('categories')">
+      <div class="nav-item" data-sec="categories" onclick="showSection('categories',this)">
         <span class="nav-icon">🗂️</span> زمرے
       </div>
-      <div class="nav-item" onclick="showSection('authors')">
+      <div class="nav-item" data-sec="authors" onclick="showSection('authors',this)">
         <span class="nav-icon">👤</span> لکھاری
       </div>
-      <div class="nav-item" onclick="showSection('breaking')">
+      <div class="nav-item" data-sec="breaking" onclick="showSection('breaking',this)">
         <span class="nav-icon">🚨</span> بریکنگ نیوز
       </div>
-      <div class="nav-item" onclick="showSection('settings')">
+      <div class="nav-item" data-sec="settings" onclick="showSection('settings',this)">
         <span class="nav-icon">⚙️</span> ترتیبات
       </div>
     </nav>
@@ -783,11 +783,12 @@ const titles = {
   settings: 'ترتیبات'
 };
 
-function showSection(name) {
+function showSection(name, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if(el) el.classList.add('active');
+  else { const active = document.querySelector('.nav-item[data-sec="'+name+'"]'); if(active) active.classList.add('active'); }
   document.getElementById('pageTitle').textContent = titles[name];
   if (name === 'dashboard') loadDashboard();
   if (name === 'news') loadNews();
@@ -878,8 +879,8 @@ async function loadNews() {
       <td>${n.featured ? '<span class="badge badge-gold">⭐ ہاں</span>' : '<span class="badge" style="background:var(--bg);color:var(--tm)">نہیں</span>'}</td>
       <td>${n.published_at ? new Date(n.published_at).toLocaleDateString('ur-PK') : '—'}</td>
       <td><div class="actions">
-        <button class="btn btn-blue btn-sm" onclick="editNews(${n.id})">✏️ ترمیم</button>
-        <button class="btn btn-red btn-sm" onclick="deleteNews(${n.id})">🗑️ حذف</button>
+        <button class="btn btn-blue btn-sm" onclick="editNews(${n.id});return false;">✏️ ترمیم</button>
+        <button class="btn btn-red btn-sm" onclick="deleteNews(${n.id});return false;">🗑️ حذف</button>
       </div></td>
     </tr>`).join('');
 }
@@ -937,8 +938,9 @@ async function openNewsModal(news = null) {
 }
 
 async function editNews(id) {
-  const { data } = await db.from('news').select('*').eq('id', id).single();
-  if (data) openNewsModal(data);
+  const { data, error } = await db.from('news').select('*').eq('id', id).single();
+  if (error) { toast('خبر نہیں ملی: ' + error.message, 'error'); return; }
+  if (data) await openNewsModal(data);
 }
 
 async function saveNews() {
