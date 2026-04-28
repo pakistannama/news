@@ -206,7 +206,7 @@ let STATE = {
   breaking: [],
   settings: {},
   prayer: { fajr:'4:45 ص', zuhr:'12:22 م', asr:'4:10 م', maghrib:'7:28 م', isha:'8:58 م', city:'بہاولنگر' },
-  rates: { gold24k:247800, usd:278.5, eur:302.3, sar:74.2, aed:75.8, gbp:352.1 },
+  rates: { gold24k:0, usd:0, eur:0, sar:0, aed:0, gbp:0, cad:0 },
   catFilter: null,
   srchOpen: false,
   srchQ: '',
@@ -239,11 +239,13 @@ async function init() {
     if(settings.isha)    STATE.prayer.isha    = settings.isha;
 
     // Currency rates from settings
-    if(settings.usd) STATE.rates.usd = settings.usd;
-    if(settings.sar) STATE.rates.sar = settings.sar;
-    if(settings.gbp) STATE.rates.gbp = settings.gbp;
-    if(settings.eur) STATE.rates.eur = settings.eur;
-    if(settings.aed) STATE.rates.aed = settings.aed;
+    if(settings.usd)     STATE.rates.usd     = settings.usd;
+    if(settings.sar)     STATE.rates.sar     = settings.sar;
+    if(settings.gbp)     STATE.rates.gbp     = settings.gbp;
+    if(settings.eur)     STATE.rates.eur     = settings.eur;
+    if(settings.aed)     STATE.rates.aed     = settings.aed;
+    if(settings.cad)     STATE.rates.cad     = settings.cad;
+    if(settings.gold24k) STATE.rates.gold24k = settings.gold24k;
 
     render();
     // Handle URL hash for article link
@@ -305,7 +307,7 @@ function renderHeader(siteName, s) {
       </div>
       <div class="hdr-actions">
         <button class="hdr-btn" onclick="openSearch()">🔍</button>
-        <button class="hdr-btn" onclick="window.location.href='admin.html'" style="font-family:'Noto Sans Arabic',sans-serif">Admin</button>
+        <!-- Admin: Ctrl+Shift+A se khulega -->
       </div>
     </div>
     <div class="date-bar">
@@ -509,20 +511,24 @@ function renderCategories() {
 
 function renderRates() {
   const r = STATE.rates;
+  const goldVal = r.gold24k && Number(r.gold24k) > 0 ? '₨ ' + Number(r.gold24k).toLocaleString() : '— ';
+  const currencies = [
+    {flag:'🇺🇸',name:'USD',val:r.usd},
+    {flag:'🇸🇦',name:'SAR',val:r.sar},
+    {flag:'🇦🇪',name:'AED',val:r.aed},
+    {flag:'🇬🇧',name:'GBP',val:r.gbp},
+    {flag:'🇪🇺',name:'EUR',val:r.eur},
+    {flag:'🇨🇦',name:'CAD',val:r.cad},
+  ].filter(x => x.val && Number(x.val) > 0);
   return `
   <div class="sw">
     <div class="sw-ttl">💰 ریٹس</div>
     <div class="sw-body">
       <div class="gold-bar">
         <span class="lbl">🥇 سونا 24K</span>
-        <span class="val">₨ ${Number(r.gold24k).toLocaleString()}</span>
+        <span class="val">${goldVal}</span>
       </div>
-      ${[
-        {flag:'🇺🇸',name:'USD',val:r.usd},
-        {flag:'🇸🇦',name:'SAR',val:r.sar},
-        {flag:'🇦🇪',name:'AED',val:r.aed},
-        {flag:'🇬🇧',name:'GBP',val:r.gbp},
-      ].map(x => `
+      ${currencies.map(x => `
       <div class="rate-item">
         <span class="rate-lbl">${x.flag} ${x.name}</span>
         <span class="rate-val">₨ ${Number(x.val).toFixed(2)}</span>
@@ -558,7 +564,7 @@ function renderFooter(siteName, s) {
         <p>پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ</p>
         <div class="social-row">
           ${s.fbUrl ? `<button class="soc-btn" style="background:#1877f2" onclick="window.open('${s.fbUrl}')">Facebook</button>` : ''}
-          ${s.waUrl ? `<button class="soc-btn" style="background:#25d366" onclick="window.open('${s.waUrl}')">WhatsApp</button>` : ''}
+          ${(s.waUrl||s.waNum) ? `<button class="soc-btn" style="background:#25d366" onclick="window.open('${s.waUrl || 'https://wa.me/' + (s.waNum||'').replace(/[^0-9]/g,'')}')">💬 WhatsApp</button>` : ''}
           ${s.twUrl ? `<button class="soc-btn" style="background:#1da1f2" onclick="window.open('${s.twUrl}')">Twitter</button>` : ''}
         </div>
       </div>
@@ -652,6 +658,15 @@ function toast(m) {
   t.textContent = m; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
+
+// =====================
+// SECRET ADMIN ACCESS — Ctrl+Shift+A
+// =====================
+document.addEventListener('keydown', function(e) {
+  if(e.ctrlKey && e.shiftKey && e.key === 'A') {
+    window.location.href = 'admin.html';
+  }
+});
 
 // =====================
 // START
