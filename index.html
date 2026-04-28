@@ -642,12 +642,24 @@ function toast(m) {
 // START
 // =====================
 window.addEventListener('load', function() {
-  if(typeof getNews !== 'undefined') {
-    init();
-  } else {
-    console.error('db.js load nahi hua');
-    document.getElementById('app').innerHTML = '<div class="loading">Connection error — refresh karein</div>';
+  let attempts = 0;
+  const maxAttempts = 20;
+  function tryInit() {
+    attempts++;
+    if (typeof getNews !== 'undefined' && typeof getDb !== 'undefined' && getDb() !== null) {
+      init();
+    } else if (attempts < maxAttempts) {
+      setTimeout(tryInit, 250);
+    } else {
+      document.getElementById('app').innerHTML = `
+        <div class="loading">
+          <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+          <div>Connection error — please refresh karein</div>
+          <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#1a7a2a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">🔄 Refresh</button>
+        </div>`;
+    }
   }
+  setTimeout(tryInit, 500);
 });
 </script>
 </body>
