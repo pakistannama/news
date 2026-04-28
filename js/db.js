@@ -1,7 +1,6 @@
 // =====================
 // Supabase Connection
 // =====================
-// CDN se supabase load hone ka wait karta hai
 function initSupabase() {
   if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
     return null;
@@ -12,7 +11,6 @@ function initSupabase() {
   );
 }
 
-// db client — lazily initialized
 let _db = null;
 function getDb() {
   if (!_db) _db = initSupabase();
@@ -138,7 +136,7 @@ function formatDateUrdu(dateStr) {
 }
 
 // =====================
-// Slug banao — FIXED (Date.now sahi hai)
+// Slug banao
 // =====================
 function makeSlug(title) {
   return title
