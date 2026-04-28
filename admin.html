@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ایڈمن پینل — پاکستان نامہ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gd:#0a3d1f;--gm:#1a6b2a;--gl:#2db844;--gp:#e8f5e9;
+  --gold:#c9a84c;--goldd:#a07830;
+  --tp:#1a1a1a;--ts:#4a4a4a;--tm:#888;
+  --bg:#f0f2f0;--card:#fff;--bdr:#e0e0e0;
+  --red:#e53935;--redl:#ffebee;
+  --blue:#1565c0;--bluel:#e3f2fd;
+  --sh:0 2px 12px rgba(0,0,0,0.08);
+  --fu:'Noto Nastaliq Urdu',serif;
+  --fi:'Noto Sans Arabic',sans-serif;
+  --r:10px;
+  --sidebar:260px;
+}
+body{font-family:var(--fi);background:var(--bg);color:var(--tp);min-height:100vh}
+
+/* ===================== LOGIN ===================== */
+#loginPage{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  background:linear-gradient(135deg,var(--gd) 0%,var(--gm) 50%,#0d5c1a 100%);
+}
+.login-box{
+  background:var(--card);border-radius:20px;
+  padding:48px 40px;width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  text-align:center;
+}
+.login-logo{
+  width:70px;height:70px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gm),var(--gl));
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin:0 auto 20px;
+  box-shadow:0 4px 20px rgba(26,107,42,0.4);
+}
+.login-box h1{font-family:var(--fu);font-size:24px;color:var(--gd);margin-bottom:6px}
+.login-box p{color:var(--tm);font-size:13px;margin-bottom:32px}
+.login-field{margin-bottom:16px;text-align:right}
+.login-field label{display:block;font-size:13px;font-weight:600;color:var(--ts);margin-bottom:6px}
+.login-field input{
+  width:100%;padding:12px 16px;
+  border:2px solid var(--bdr);border-radius:var(--r);
+  font-family:var(--fi);font-size:14px;
+  transition:border-color .2s;outline:none;
+  text-align:right;
+}
+.login-field input:focus{border-color:var(--gm)}
+.login-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--gm),var(--gl));
+  color:#fff;border:none;border-radius:var(--r);
+  font-family:var(--fi);font-size:15px;font-weight:600;
+  cursor:pointer;transition:opacity .2s;margin-top:8px;
+}
+.login-btn:hover{opacity:.9}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-err{
+  background:var(--redl);color:var(--red);
+  padding:10px 14px;border-radius:var(--r);
+  font-size:13px;margin-top:12px;display:none;
+}
+
+/* ===================== ADMIN LAYOUT ===================== */
+#adminPage{display:none;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  position:fixed;top:0;right:0;
+  width:var(--sidebar);height:100vh;
+  background:linear-gradient(180deg,var(--gd) 0%,#0d4a1a 100%);
+  color:#fff;overflow-y:auto;z-index:100;
+  display:flex;flex-direction:column;
+}
+.sidebar-logo{
+  padding:24px 20px;border-bottom:1px solid rgba(255,255,255,0.1);
+  text-align:center;
+}
+.sidebar-logo .s-icon{font-size:28px;margin-bottom:6px}
+.sidebar-logo h2{font-family:var(--fu);font-size:18px;color:var(--gold)}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px}
+
+.sidebar-nav{flex:1;padding:16px 0}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 20px;cursor:pointer;
+  font-size:14px;font-weight:500;
+  color:rgba(255,255,255,0.75);
+  transition:all .2s;border-right:3px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{
+  background:rgba(255,255,255,0.12);color:#fff;
+  border-right-color:var(--gold);
+}
+.nav-item .nav-icon{font-size:18px;width:24px;text-align:center}
+
+.sidebar-footer{
+  padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1);
+}
+.logout-btn{
+  width:100%;padding:10px;
+  background:rgba(229,57,53,0.2);color:#ff8a80;
+  border:1px solid rgba(229,57,53,0.3);border-radius:var(--r);
+  font-family:var(--fi);font-size:13px;cursor:pointer;
+  transition:all .2s;
+}
+.logout-btn:hover{background:rgba(229,57,53,0.35);color:#fff}
+
+/* Main content */
+.main{
+  margin-right:var(--sidebar);
+  min-height:100vh;
+  padding:24px;
+}
+
+/* Topbar */
+.topbar{
+  background:var(--card);border-radius:var(--r);
+  padding:16px 24px;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--sh);
+}
+.topbar h1{font-family:var(--fu);font-size:20px;color:var(--gd)}
+.topbar-user{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ts)}
+.topbar-user .avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gm),var(--gl));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:16px;
+}
+
+/* Sections */
+.section{display:none}
+.section.active{display:block}
+
+/* Stats cards */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border-radius:var(--r);
+  padding:20px;box-shadow:var(--sh);
+  display:flex;align-items:center;gap:16px;
+}
+.stat-icon{
+  width:52px;height:52px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+.stat-icon.green{background:var(--gp);color:var(--gm)}
+.stat-icon.gold{background:#fff8e1;color:var(--goldd)}
+.stat-icon.blue{background:var(--bluel);color:var(--blue)}
+.stat-icon.red{background:var(--redl);color:var(--red)}
+.stat-info h3{font-size:24px;font-weight:700;color:var(--tp)}
+.stat-info p{font-size:12px;color:var(--tm);margin-top:2px}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:20px}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-header h2{font-size:16px;font-weight:600;color:var(--gd)}
+.card-body{padding:20px}
+
+/* Buttons */
+.btn{
+  padding:9px 18px;border-radius:var(--r);
+  font-family:var(--fi);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;transition:all .2s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn-green{background:linear-gradient(135deg,var(--gm),var(--gl));color:#fff}
+.btn-green:hover{opacity:.9}
+.btn-red{background:var(--redl);color:var(--red);border:1px solid #ffcdd2}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-blue{background:var(--bluel);color:var(--blue);border:1px solid #bbdefb}
+.btn-blue:hover{background:var(--blue);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-gold{background:#fff8e1;color:var(--goldd);border:1px solid #ffe082}
+.btn-gold:hover{background:var(--gold);color:#fff}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{
+  background:var(--bg);padding:10px 14px;
+  text-align:right;font-size:12px;font-weight:600;
+  color:var(--ts);border-bottom:2px solid var(--bdr);
+}
+.tbl td{
+  padding:12px 14px;border-bottom:1px solid var(--bdr);
+  font-size:13px;vertical-align:middle;
+}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafafa}
+.tbl .actions{display:flex;gap:6px;justify-content:flex-end}
+
+/* Badge */
+.badge{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:11px;font-weight:600;
+}
+.badge-green{background:var(--gp);color:var(--gm)}
+.badge-red{background:var(--redl);color:var(--red)}
+.badge-gold{background:#fff8e1;color:var(--goldd)}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.full{grid-template-columns:1fr}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ts);margin-bottom:6px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 14px;
+  border:2px solid var(--bdr);border-radius:var(--r);
+  font-family:var(--fi);font-size:13px;
+  transition:border-color .2s;outline:none;
+  background:var(--card);color:var(--tp);
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gm)}
+.field textarea{resize:vertical;min-height:120px}
+.field .hint{font-size:11px;color:var(--tm);margin-top:4px}
+
+/* Image upload */
+.img-upload{
+  border:2px dashed var(--bdr);border-radius:var(--r);
+  padding:24px;text-align:center;cursor:pointer;
+  transition:border-color .2s;background:#fafafa;
+}
+.img-upload:hover{border-color:var(--gm)}
+.img-upload input{display:none}
+.img-upload .preview{
+  max-width:100%;max-height:200px;
+  border-radius:var(--r);margin-top:12px;
+  object-fit:cover;
+}
+.img-upload p{color:var(--tm);font-size:13px}
+.img-upload .upload-icon{font-size:36px;margin-bottom:8px}
+.uploading{color:var(--gm);font-size:13px;margin-top:8px}
+
+/* Toggle */
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{
+  position:relative;width:44px;height:24px;
+  cursor:pointer;
+}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;
+  background:#ccc;border-radius:24px;
+  transition:.3s;
+}
+.toggle-slider:before{
+  content:'';position:absolute;
+  width:18px;height:18px;
+  right:3px;bottom:3px;
+  background:#fff;border-radius:50%;
+  transition:.3s;
+}
+.toggle input:checked + .toggle-slider{background:var(--gm)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(-20px)}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:200;display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--card);border-radius:16px;
+  width:100%;max-width:620px;max-height:90vh;
+  overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header{
+  padding:20px 24px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--card);z-index:1;
+}
+.modal-header h3{font-size:16px;font-weight:600;color:var(--gd)}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--bg);border:none;cursor:pointer;
+  font-size:18px;display:flex;align-items:center;justify-content:center;
+}
+.modal-body{padding:24px}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--bdr);
+  display:flex;gap:10px;justify-content:flex-end;
+}
+
+/* Loading */
+.loading-row td{text-align:center;padding:40px;color:var(--tm)}
+.spinner{
+  width:32px;height:32px;border:3px solid var(--bdr);
+  border-top-color:var(--gm);border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 8px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:24px;
+  padding:12px 20px;border-radius:var(--r);
+  font-size:13px;font-weight:600;color:#fff;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  z-index:999;transform:translateY(60px);
+  transition:transform .3s;pointer-events:none;
+}
+.toast.show{transform:translateY(0)}
+.toast.success{background:var(--gm)}
+.toast.error{background:var(--red)}
+
+/* Empty state */
+.empty{text-align:center;padding:48px;color:var(--tm)}
+.empty .empty-icon{font-size:48px;margin-bottom:12px}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative}
+  .main{margin-right:0}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">🗞️</div>
+    <h1>پاکستان نامہ</h1>
+    <p>ایڈمن پینل — لاگ ان کریں</p>
+    <div class="login-field">
+      <label>ای میل</label>
+      <input type="email" id="loginEmail" placeholder="admin@pakistannama.com" dir="ltr">
+    </div>
+    <div class="login-field">
+      <label>پاس ورڈ</label>
+      <input type="password" id="loginPass" placeholder="••••••••" dir="ltr">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">🔐 لاگ ان</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN PAGE ===================== -->
+<div id="adminPage">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-icon">🗞️</div>
+      <h2>پاکستان نامہ</h2>
+      <p>ایڈمن پینل</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <span class="nav-icon">📊</span> ڈیش بورڈ
+      </div>
+      <div class="nav-item" onclick="showSection('news')">
+        <span class="nav-icon">📰</span> خبریں
+      </div>
+      <div class="nav-item" onclick="showSection('categories')">
+        <span class="nav-icon">🗂️</span> زمرے
+      </div>
+      <div class="nav-item" onclick="showSection('authors')">
+        <span class="nav-icon">👤</span> لکھاری
+      </div>
+      <div class="nav-item" onclick="showSection('breaking')">
+        <span class="nav-icon">🚨</span> بریکنگ نیوز
+      </div>
+      <div class="nav-item" onclick="showSection('settings')">
+        <span class="nav-icon">⚙️</span> ترتیبات
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()">🚪 لاگ آؤٹ</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">ڈیش بورڈ</h1>
+      <div class="topbar-user">
+        <span id="userEmail">admin</span>
+        <div class="avatar">👤</div>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon green">📰</div>
+          <div class="stat-info">
+            <h3 id="statNews">—</h3>
+            <p>کل خبریں</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">👁️</div>
+          <div class="stat-info">
+            <h3 id="statViews">—</h3>
+            <p>کل ویوز</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">🗂️</div>
+          <div class="stat-info">
+            <h3 id="statCats">—</h3>
+            <p>زمرے</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">🚨</div>
+          <div class="stat-info">
+            <h3 id="statBreaking">—</h3>
+            <p>بریکنگ نیوز</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>📰 تازہ ترین خبریں</h2></div>
+        <div class="card-body">
+          <table class="tbl">
+            <thead><tr><th>عنوان</th><th>زمرہ</th><th>تاریخ</th><th>ایکشن</th></tr></thead>
+            <tbody id="dashNewsTbl"><tr class="loading-row"><td colspan="4"><div class="spinner"></div>لوڈ ہو رہا ہے...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NEWS ===== -->
+    <div class="section" id="sec-news">
+      <div class="card">
+        <div class="card-header">
+          <h2>📰 تمام خبریں</h2>
+          <button class="btn btn-green" onclick="openNewsModal()">➕ نئی خبر</button>
+        </div>
+        <div class="card-body">
+          <table class="tbl">
+            <thead><tr><th>عنوان</th><th>زمرہ</th><th>نمایاں</th><th>تاریخ</th><th>ایکشن</th></tr></thead>
+            <tbody id="newsTbl"><tr class="loading-row"><td colspan="5"><div class="spinner"></div>لوڈ ہو رہا ہے...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CATEGORIES ===== -->
+    <div class="section" id="sec-categories">
+      <div class="card">
+        <div class="card-header">
+          <h2>🗂️ زمرے</h2>
+          <button class="btn btn-green" onclick="openCatModal()">➕ نیا زمرہ</button>
+        </div>
+        <div class="card-body">
+          <table class="tbl">
+            <thead><tr><th>نام</th><th>سلگ</th><th>رنگ</th><th>آئیکن</th><th>ایکشن</th></tr></thead>
+            <tbody id="catsTbl"><tr class="loading-row"><td colspan="5"><div class="spinner"></div>لوڈ ہو رہا ہے...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== AUTHORS ===== -->
+    <div class="section" id="sec-authors">
+      <div class="card">
+        <div class="card-header">
+          <h2>👤 لکھاری</h2>
+          <button class="btn btn-green" onclick="openAuthorModal()">➕ نیا لکھاری</button>
+        </div>
+        <div class="card-body">
+          <table class="tbl">
+            <thead><tr><th>نام</th><th>ای میل</th><th>تعارف</th><th>ایکشن</th></tr></thead>
+            <tbody id="authorsTbl"><tr class="loading-row"><td colspan="4"><div class="spinner"></div>لوڈ ہو رہا ہے...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== BREAKING NEWS ===== -->
+    <div class="section" id="sec-breaking">
+      <div class="card">
+        <div class="card-header">
+          <h2>🚨 بریکنگ نیوز</h2>
+          <button class="btn btn-green" onclick="openBreakingModal()">➕ نئی بریکنگ</button>
+        </div>
+        <div class="card-body">
+          <table class="tbl">
+            <thead><tr><th>متن</th><th>فعال</th><th>ایکشن</th></tr></thead>
+            <tbody id="breakingTbl"><tr class="loading-row"><td colspan="3"><div class="spinner"></div>لوڈ ہو رہا ہے...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="section" id="sec-settings">
+      <div class="card">
+        <div class="card-header"><h2>⚙️ سائٹ ترتیبات</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label>سائٹ کا نام</label><input type="text" id="set-siteName"></div>
+            <div class="field"><label>چیف ایڈیٹر</label><input type="text" id="set-chiefEditor"></div>
+            <div class="field"><label>فیس بک لنک</label><input type="text" id="set-fbUrl" dir="ltr"></div>
+            <div class="field"><label>ٹویٹر لنک</label><input type="text" id="set-twUrl" dir="ltr"></div>
+            <div class="field"><label>یوٹیوب لنک</label><input type="text" id="set-ytUrl" dir="ltr"></div>
+            <div class="field"><label>واٹس ایپ نمبر</label><input type="text" id="set-waNum" dir="ltr"></div>
+          </div>
+          <div class="field"><label>فوٹر متن</label><input type="text" id="set-footerText"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>🕌 نماز اوقات (بہاولنگر)</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label>فجر</label><input type="text" id="set-fajr" placeholder="05:12"></div>
+            <div class="field"><label>ظہر</label><input type="text" id="set-zuhr" placeholder="12:30"></div>
+            <div class="field"><label>عصر</label><input type="text" id="set-asr" placeholder="16:15"></div>
+            <div class="field"><label>مغرب</label><input type="text" id="set-maghrib" placeholder="19:45"></div>
+            <div class="field"><label>عشاء</label><input type="text" id="set-isha" placeholder="21:10"></div>
+            <div class="field"><label>سحری</label><input type="text" id="set-sehri" placeholder="04:45"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>💱 کرنسی ریٹ</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label>امریکی ڈالر (USD)</label><input type="text" id="set-usd" placeholder="278.50"></div>
+            <div class="field"><label>سعودی ریال (SAR)</label><input type="text" id="set-sar" placeholder="74.20"></div>
+            <div class="field"><label>برطانوی پاؤنڈ (GBP)</label><input type="text" id="set-gbp" placeholder="352.00"></div>
+            <div class="field"><label>یورو (EUR)</label><input type="text" id="set-eur" placeholder="300.00"></div>
+            <div class="field"><label>یو اے ای درہم (AED)</label><input type="text" id="set-aed" placeholder="75.80"></div>
+            <div class="field"><label>کینیڈین ڈالر (CAD)</label><input type="text" id="set-cad" placeholder="205.00"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-green" onclick="saveSettings()" style="padding:12px 32px;font-size:15px">
+        💾 ترتیبات محفوظ کریں
+      </button>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /adminPage -->
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- News Modal -->
+<div class="modal-overlay" id="newsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="newsModalTitle">نئی خبر شامل کریں</h3>
+      <button class="modal-close" onclick="closeModal('newsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="newsId">
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>عنوان *</label>
+          <input type="text" id="newsTitle" placeholder="خبر کا عنوان لکھیں">
+        </div>
+        <div class="field">
+          <label>زمرہ *</label>
+          <select id="newsCat"><option value="">— زمرہ منتخب کریں —</option></select>
+        </div>
+        <div class="field">
+          <label>لکھاری</label>
+          <select id="newsAuthor"><option value="">— لکھاری منتخب کریں —</option></select>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>خبر کا متن *</label>
+          <textarea id="newsBody" rows="6" placeholder="خبر کی تفصیل لکھیں..."></textarea>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>تصویر</label>
+          <div class="img-upload" id="imgUploadArea" onclick="document.getElementById('imgFile').click()">
+            <input type="file" id="imgFile" accept="image/*" onchange="uploadImage(this)">
+            <div class="upload-icon">🖼️</div>
+            <p>تصویر اپ لوڈ کریں — کلک کریں</p>
+            <div class="uploading" id="uploadingMsg" style="display:none">⏳ اپ لوڈ ہو رہی ہے...</div>
+            <img id="imgPreview" class="preview" style="display:none">
+          </div>
+          <input type="hidden" id="newsImage">
+        </div>
+        <div class="field">
+          <label>ٹیگز (کاما سے الگ کریں)</label>
+          <input type="text" id="newsTags" placeholder="پاکستان، سیاست، کرکٹ">
+        </div>
+        <div class="field">
+          <label>Meta عنوان (SEO)</label>
+          <input type="text" id="newsMetaTitle">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Meta تفصیل (SEO)</label>
+          <input type="text" id="newsMetaDesc">
+        </div>
+        <div class="field">
+          <label>نمایاں خبر؟</label>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="newsFeatured"><span class="toggle-slider"></span></label>
+            <span style="font-size:13px;color:var(--ts)">ہاں، نمایاں کریں</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>بریکنگ نیوز بنائیں؟</label>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="newsBreaking"><span class="toggle-slider"></span></label>
+            <span style="font-size:13px;color:var(--ts)">ہاں، بریکنگ بنائیں</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red" onclick="closeModal('newsModal')">منسوخ</button>
+      <button class="btn btn-green" onclick="saveNews()" id="saveNewsBtn">💾 محفوظ کریں</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3 id="catModalTitle">نیا زمرہ</h3>
+      <button class="modal-close" onclick="closeModal('catModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="catId">
+      <div class="field"><label>نام *</label><input type="text" id="catName" placeholder="مثلاً: سیاست"></div>
+      <div class="field"><label>سلگ *</label><input type="text" id="catSlug" placeholder="siasat" dir="ltr"></div>
+      <div class="form-grid">
+        <div class="field"><label>رنگ</label><input type="color" id="catColor" value="#1a7a2a" style="height:42px;padding:4px"></div>
+        <div class="field"><label>آئیکن (emoji)</label><input type="text" id="catIcon" placeholder="🏛️" style="font-size:20px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red" onclick="closeModal('catModal')">منسوخ</button>
+      <button class="btn btn-green" onclick="saveCat()">💾 محفوظ کریں</button>
+    </div>
+  </div>
+</div>
+
+<!-- Author Modal -->
+<div class="modal-overlay" id="authorModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3 id="authorModalTitle">نیا لکھاری</h3>
+      <button class="modal-close" onclick="closeModal('authorModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="authorId">
+      <div class="field"><label>نام *</label><input type="text" id="authorName" placeholder="لکھاری کا نام"></div>
+      <div class="field"><label>ای میل</label><input type="email" id="authorEmail" placeholder="email@example.com" dir="ltr"></div>
+      <div class="field"><label>تعارف</label><textarea id="authorBio" rows="3" placeholder="مختصر تعارف..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red" onclick="closeModal('authorModal')">منسوخ</button>
+      <button class="btn btn-green" onclick="saveAuthor()">💾 محفوظ کریں</button>
+    </div>
+  </div>
+</div>
+
+<!-- Breaking Modal -->
+<div class="modal-overlay" id="breakingModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3>نئی بریکنگ نیوز</h3>
+      <button class="modal-close" onclick="closeModal('breakingModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>بریکنگ نیوز متن *</label><textarea id="breakingText" rows="3" placeholder="بریکنگ نیوز لکھیں..."></textarea></div>
+      <div class="field">
+        <label>فوری فعال کریں؟</label>
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="breakingActive" checked><span class="toggle-slider"></span></label>
+          <span style="font-size:13px;color:var(--ts)">ہاں</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red" onclick="closeModal('breakingModal')">منسوخ</button>
+      <button class="btn btn-green" onclick="saveBreaking()">💾 محفوظ کریں</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================
+// SUPABASE INIT
+// =====================
+const SUPA_URL = 'https://eeyzlmnizlxejgbbalcl.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVleXpsbW5pemx4ZWpnYmJhbGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMjU3NTQsImV4cCI6MjA5MjgwMTc1NH0.m3IGcrkWMZSb9xmu1yqPCzbltAakQ2RNQgyi9GzcNyo';
+const CLOUDINARY_CLOUD = 'dq2fbsi1s';
+const CLOUDINARY_PRESET = 'pakistan_nama';
+
+let db;
+window.addEventListener('load', function() {
+  db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  checkAuth();
+});
+
+// =====================
+// AUTH
+// =====================
+async function checkAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    showAdmin(session.user.email);
+  } else {
+    document.getElementById('loginPage').style.display = 'flex';
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  if (!email || !pass) { showLoginErr('ای میل اور پاس ورڈ درج کریں'); return; }
+  btn.disabled = true;
+  btn.textContent = '⏳ لاگ ان ہو رہا ہے...';
+  err.style.display = 'none';
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    showLoginErr('ای میل یا پاس ورڈ غلط ہے');
+    btn.disabled = false;
+    btn.textContent = '🔐 لاگ ان';
+  } else {
+    showAdmin(data.user.email);
+  }
+}
+
+function showLoginErr(msg) {
+  const err = document.getElementById('loginErr');
+  err.textContent = msg;
+  err.style.display = 'block';
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  location.reload();
+}
+
+function showAdmin(email) {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminPage').style.display = 'block';
+  document.getElementById('userEmail').textContent = email;
+  loadDashboard();
+}
+
+// Enter key login
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
+    doLogin();
+  }
+});
+
+// =====================
+// NAVIGATION
+// =====================
+const titles = {
+  dashboard: 'ڈیش بورڈ',
+  news: 'خبریں',
+  categories: 'زمرے',
+  authors: 'لکھاری',
+  breaking: 'بریکنگ نیوز',
+  settings: 'ترتیبات'
+};
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  document.getElementById('pageTitle').textContent = titles[name];
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'news') loadNews();
+  if (name === 'categories') loadCats();
+  if (name === 'authors') loadAuthors();
+  if (name === 'breaking') loadBreaking();
+  if (name === 'settings') loadSettings();
+}
+
+// =====================
+// TOAST
+// =====================
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// =====================
+// MODAL
+// =====================
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// =====================
+// DASHBOARD
+// =====================
+async function loadDashboard() {
+  const [newsR, catsR, breakingR] = await Promise.all([
+    db.from('news').select('id, title, published_at, views, categories(name)', {count: 'exact'}),
+    db.from('categories').select('id', {count: 'exact'}),
+    db.from('breaking_news').select('id', {count: 'exact'}).eq('active', true)
+  ]);
+  const news = newsR.data || [];
+  const totalViews = news.reduce((s, n) => s + (n.views || 0), 0);
+  document.getElementById('statNews').textContent = news.length;
+  document.getElementById('statViews').textContent = totalViews.toLocaleString();
+  document.getElementById('statCats').textContent = (catsR.data || []).length;
+  document.getElementById('statBreaking').textContent = (breakingR.data || []).length;
+  // Recent 5
+  const recent = news.slice(0, 5);
+  const tbody = document.getElementById('dashNewsTbl');
+  if (!recent.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--tm)">کوئی خبر نہیں</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(n => `
+    <tr>
+      <td>${n.title}</td>
+      <td><span class="badge badge-green">${n.categories?.name || '—'}</span></td>
+      <td>${n.published_at ? new Date(n.published_at).toLocaleDateString('ur-PK') : '—'}</td>
+      <td><div class="actions">
+        <button class="btn btn-blue btn-sm" onclick="editNews(${n.id})">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="deleteNews(${n.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+// =====================
+// NEWS
+// =====================
+let allCats = [], allAuthors = [];
+
+async function loadNews() {
+  const { data } = await db.from('news')
+    .select('*, categories(name)')
+    .order('published_at', { ascending: false });
+  const tbody = document.getElementById('newsTbl');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--tm)"><div class="empty-icon">📰</div><br>کوئی خبر نہیں</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(n => `
+    <tr>
+      <td style="max-width:300px">${n.title}</td>
+      <td><span class="badge badge-green">${n.categories?.name || '—'}</span></td>
+      <td>${n.featured ? '<span class="badge badge-gold">⭐ ہاں</span>' : '<span class="badge" style="background:var(--bg);color:var(--tm)">نہیں</span>'}</td>
+      <td>${n.published_at ? new Date(n.published_at).toLocaleDateString('ur-PK') : '—'}</td>
+      <td><div class="actions">
+        <button class="btn btn-blue btn-sm" onclick="editNews(${n.id})">✏️ ترمیم</button>
+        <button class="btn btn-red btn-sm" onclick="deleteNews(${n.id})">🗑️ حذف</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+async function openNewsModal(news = null) {
+  // Load cats & authors
+  const [cR, aR] = await Promise.all([
+    db.from('categories').select('*').order('id'),
+    db.from('authors').select('*').order('name')
+  ]);
+  allCats = cR.data || [];
+  allAuthors = aR.data || [];
+
+  document.getElementById('newsCat').innerHTML =
+    '<option value="">— زمرہ منتخب کریں —</option>' +
+    allCats.map(c => `<option value="${c.id}">${c.icon || ''} ${c.name}</option>`).join('');
+  document.getElementById('newsAuthor').innerHTML =
+    '<option value="">— لکھاری منتخب کریں —</option>' +
+    allAuthors.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+  // Reset
+  document.getElementById('newsId').value = '';
+  document.getElementById('newsTitle').value = '';
+  document.getElementById('newsBody').value = '';
+  document.getElementById('newsCat').value = '';
+  document.getElementById('newsAuthor').value = '';
+  document.getElementById('newsImage').value = '';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('newsTags').value = '';
+  document.getElementById('newsMetaTitle').value = '';
+  document.getElementById('newsMetaDesc').value = '';
+  document.getElementById('newsFeatured').checked = false;
+  document.getElementById('newsBreaking').checked = false;
+  document.getElementById('newsModalTitle').textContent = 'نئی خبر شامل کریں';
+
+  if (news) {
+    document.getElementById('newsModalTitle').textContent = 'خبر میں ترمیم';
+    document.getElementById('newsId').value = news.id;
+    document.getElementById('newsTitle').value = news.title || '';
+    document.getElementById('newsBody').value = news.body || '';
+    document.getElementById('newsCat').value = news.cat_id || '';
+    document.getElementById('newsAuthor').value = news.author_id || '';
+    document.getElementById('newsImage').value = news.image || '';
+    document.getElementById('newsTags').value = (news.tags || []).join(', ');
+    document.getElementById('newsMetaTitle').value = news.meta_title || '';
+    document.getElementById('newsMetaDesc').value = news.meta_desc || '';
+    document.getElementById('newsFeatured').checked = news.featured || false;
+    if (news.image) {
+      const img = document.getElementById('imgPreview');
+      img.src = news.image;
+      img.style.display = 'block';
+    }
+  }
+  openModal('newsModal');
+}
+
+async function editNews(id) {
+  const { data } = await db.from('news').select('*').eq('id', id).single();
+  if (data) openNewsModal(data);
+}
+
+async function saveNews() {
+  const btn = document.getElementById('saveNewsBtn');
+  const id = document.getElementById('newsId').value;
+  const title = document.getElementById('newsTitle').value.trim();
+  const body = document.getElementById('newsBody').value.trim();
+  const cat_id = document.getElementById('newsCat').value;
+  if (!title || !body || !cat_id) { toast('عنوان، متن اور زمرہ لازمی ہیں', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ محفوظ ہو رہا ہے...';
+
+  const tagsRaw = document.getElementById('newsTags').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const featured = document.getElementById('newsFeatured').checked;
+  const addBreaking = document.getElementById('newsBreaking').checked;
+  const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u0600-\u06FF-]/g, '').slice(0, 60) + '-' + Date.now();
+
+  const payload = {
+    title,
+    body,
+    cat_id: parseInt(cat_id),
+    author_id: document.getElementById('newsAuthor').value || null,
+    image: document.getElementById('newsImage').value || null,
+    tags,
+    featured,
+    meta_title: document.getElementById('newsMetaTitle').value || title,
+    meta_desc: document.getElementById('newsMetaDesc').value || body.slice(0, 160),
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('news').update(payload).eq('id', id));
+  } else {
+    payload.slug = slug;
+    payload.published_at = new Date().toISOString();
+    payload.views = 0;
+    ({ error } = await db.from('news').insert(payload));
+    // Add to breaking if checked
+    if (!error && addBreaking) {
+      await db.from('breaking_news').insert({ text: title, active: true });
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 محفوظ کریں';
+
+  if (error) { toast('غلطی: ' + error.message, 'error'); return; }
+  toast(id ? '✅ خبر اپ ڈیٹ ہو گئی' : '✅ خبر شامل ہو گئی');
+  closeModal('newsModal');
+  loadNews();
+  loadDashboard();
+}
+
+async function deleteNews(id) {
+  if (!confirm('کیا آپ یہ خبر حذف کرنا چاہتے ہیں؟')) return;
+  const { error } = await db.from('news').delete().eq('id', id);
+  if (error) { toast('حذف نہیں ہوا: ' + error.message, 'error'); return; }
+  toast('✅ خبر حذف ہو گئی');
+  loadNews();
+  loadDashboard();
+}
+
+// =====================
+// IMAGE UPLOAD (Cloudinary)
+// =====================
+async function uploadImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('uploadingMsg').style.display = 'block';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+      method: 'POST', body: fd
+    });
+    const data = await res.json();
+    if (data.secure_url) {
+      document.getElementById('newsImage').value = data.secure_url;
+      const img = document.getElementById('imgPreview');
+      img.src = data.secure_url;
+      img.style.display = 'block';
+      toast('✅ تصویر اپ لوڈ ہو گئی');
+    } else {
+      toast('تصویر اپ لوڈ نہیں ہوئی', 'error');
+    }
+  } catch(e) {
+    toast('Cloudinary error: ' + e.message, 'error');
+  }
+  document.getElementById('uploadingMsg').style.display = 'none';
+}
+
+// =====================
+// CATEGORIES
+// =====================
+async function loadCats() {
+  const { data } = await db.from('categories').select('*').order('id');
+  const tbody = document.getElementById('catsTbl');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--tm)">کوئی زمرہ نہیں</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td><b>${c.name}</b></td>
+      <td dir="ltr"><code>${c.slug}</code></td>
+      <td><span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:${c.color || '#ccc'};border:2px solid #ddd"></span></td>
+      <td style="font-size:22px">${c.icon || '—'}</td>
+      <td><div class="actions">
+        <button class="btn btn-blue btn-sm" onclick="editCat(${c.id})">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="deleteCat(${c.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openCatModal() {
+  document.getElementById('catId').value = '';
+  document.getElementById('catName').value = '';
+  document.getElementById('catSlug').value = '';
+  document.getElementById('catColor').value = '#1a7a2a';
+  document.getElementById('catIcon').value = '';
+  document.getElementById('catModalTitle').textContent = 'نیا زمرہ';
+  openModal('catModal');
+}
+
+async function editCat(id) {
+  const { data } = await db.from('categories').select('*').eq('id', id).single();
+  if (!data) return;
+  document.getElementById('catId').value = data.id;
+  document.getElementById('catName').value = data.name;
+  document.getElementById('catSlug').value = data.slug;
+  document.getElementById('catColor').value = data.color || '#1a7a2a';
+  document.getElementById('catIcon').value = data.icon || '';
+  document.getElementById('catModalTitle').textContent = 'زمرہ ترمیم';
+  openModal('catModal');
+}
+
+async function saveCat() {
+  const id = document.getElementById('catId').value;
+  const name = document.getElementById('catName').value.trim();
+  const slug = document.getElementById('catSlug').value.trim();
+  if (!name || !slug) { toast('نام اور سلگ لازمی ہیں', 'error'); return; }
+  const payload = {
+    name, slug,
+    color: document.getElementById('catColor').value,
+    icon: document.getElementById('catIcon').value
+  };
+  let error;
+  if (id) {
+    ({ error } = await db.from('categories').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('categories').insert(payload));
+  }
+  if (error) { toast('غلطی: ' + error.message, 'error'); return; }
+  toast(id ? '✅ زمرہ اپ ڈیٹ ہوا' : '✅ زمرہ شامل ہوا');
+  closeModal('catModal');
+  loadCats();
+}
+
+async function deleteCat(id) {
+  if (!confirm('کیا آپ یہ زمرہ حذف کرنا چاہتے ہیں؟')) return;
+  const { error } = await db.from('categories').delete().eq('id', id);
+  if (error) { toast('حذف نہیں ہوا', 'error'); return; }
+  toast('✅ زمرہ حذف ہوا');
+  loadCats();
+}
+
+// =====================
+// AUTHORS
+// =====================
+async function loadAuthors() {
+  const { data } = await db.from('authors').select('*').order('name');
+  const tbody = document.getElementById('authorsTbl');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--tm)">کوئی لکھاری نہیں</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(a => `
+    <tr>
+      <td><b>${a.name}</b></td>
+      <td dir="ltr">${a.email || '—'}</td>
+      <td style="max-width:200px;color:var(--ts)">${a.bio ? a.bio.slice(0, 60) + '...' : '—'}</td>
+      <td><div class="actions">
+        <button class="btn btn-blue btn-sm" onclick="editAuthor(${a.id})">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="deleteAuthor(${a.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openAuthorModal() {
+  document.getElementById('authorId').value = '';
+  document.getElementById('authorName').value = '';
+  document.getElementById('authorEmail').value = '';
+  document.getElementById('authorBio').value = '';
+  document.getElementById('authorModalTitle').textContent = 'نیا لکھاری';
+  openModal('authorModal');
+}
+
+async function editAuthor(id) {
+  const { data } = await db.from('authors').select('*').eq('id', id).single();
+  if (!data) return;
+  document.getElementById('authorId').value = data.id;
+  document.getElementById('authorName').value = data.name;
+  document.getElementById('authorEmail').value = data.email || '';
+  document.getElementById('authorBio').value = data.bio || '';
+  document.getElementById('authorModalTitle').textContent = 'لکھاری ترمیم';
+  openModal('authorModal');
+}
+
+async function saveAuthor() {
+  const id = document.getElementById('authorId').value;
+  const name = document.getElementById('authorName').value.trim();
+  if (!name) { toast('نام لازمی ہے', 'error'); return; }
+  const payload = {
+    name,
+    email: document.getElementById('authorEmail').value || null,
+    bio: document.getElementById('authorBio').value || null
+  };
+  let error;
+  if (id) {
+    ({ error } = await db.from('authors').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('authors').insert(payload));
+  }
+  if (error) { toast('غلطی: ' + error.message, 'error'); return; }
+  toast(id ? '✅ لکھاری اپ ڈیٹ ہوا' : '✅ لکھاری شامل ہوا');
+  closeModal('authorModal');
+  loadAuthors();
+}
+
+async function deleteAuthor(id) {
+  if (!confirm('کیا آپ یہ لکھاری حذف کرنا چاہتے ہیں؟')) return;
+  const { error } = await db.from('authors').delete().eq('id', id);
+  if (error) { toast('حذف نہیں ہوا', 'error'); return; }
+  toast('✅ لکھاری حذف ہوا');
+  loadAuthors();
+}
+
+// =====================
+// BREAKING NEWS
+// =====================
+async function loadBreaking() {
+  const { data } = await db.from('breaking_news').select('*').order('created_at', { ascending: false });
+  const tbody = document.getElementById('breakingTbl');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:32px;color:var(--tm)">کوئی بریکنگ نیوز نہیں</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td>${b.text}</td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${b.active ? 'checked' : ''} onchange="toggleBreaking(${b.id}, this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td><div class="actions">
+        <button class="btn btn-red btn-sm" onclick="deleteBreaking(${b.id})">🗑️ حذف</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openBreakingModal() {
+  document.getElementById('breakingText').value = '';
+  document.getElementById('breakingActive').checked = true;
+  openModal('breakingModal');
+}
+
+async function saveBreaking() {
+  const text = document.getElementById('breakingText').value.trim();
+  if (!text) { toast('متن لازمی ہے', 'error'); return; }
+  const active = document.getElementById('breakingActive').checked;
+  const { error } = await db.from('breaking_news').insert({ text, active });
+  if (error) { toast('غلطی: ' + error.message, 'error'); return; }
+  toast('✅ بریکنگ نیوز شامل ہوئی');
+  closeModal('breakingModal');
+  loadBreaking();
+}
+
+async function toggleBreaking(id, active) {
+  await db.from('breaking_news').update({ active }).eq('id', id);
+  toast(active ? '✅ فعال ہو گئی' : '⛔ غیر فعال ہو گئی');
+}
+
+async function deleteBreaking(id) {
+  if (!confirm('حذف کریں؟')) return;
+  await db.from('breaking_news').delete().eq('id', id);
+  toast('✅ حذف ہو گئی');
+  loadBreaking();
+}
+
+// =====================
+// SETTINGS
+// =====================
+const settingKeys = [
+  'siteName','chiefEditor','fbUrl','twUrl','ytUrl','waNum','footerText',
+  'fajr','zuhr','asr','maghrib','isha','sehri',
+  'usd','sar','gbp','eur','aed','cad'
+];
+
+async function loadSettings() {
+  const { data } = await db.from('settings').select('*');
+  const map = {};
+  (data || []).forEach(r => map[r.key] = r.value);
+  settingKeys.forEach(k => {
+    const el = document.getElementById('set-' + k);
+    if (el) el.value = map[k] || '';
+  });
+}
+
+async function saveSettings() {
+  const upserts = settingKeys.map(k => ({
+    key: k,
+    value: (document.getElementById('set-' + k)?.value || '').trim()
+  }));
+  const { error } = await db.from('settings').upsert(upserts, { onConflict: 'key' });
+  if (error) { toast('غلطی: ' + error.message, 'error'); return; }
+  toast('✅ ترتیبات محفوظ ہو گئیں');
+}
+</script>
+</body>
+</html>
