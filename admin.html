@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ایڈمن پینل — پاکستان نامہ</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -514,7 +516,7 @@ body{font-family:var(--fi);background:var(--bg);color:var(--tp);min-height:100vh
             <div class="field"><label>فیس بک لنک</label><input type="text" id="set-fbUrl" dir="ltr"></div>
             <div class="field"><label>ٹویٹر لنک</label><input type="text" id="set-twUrl" dir="ltr"></div>
             <div class="field"><label>یوٹیوب لنک</label><input type="text" id="set-ytUrl" dir="ltr"></div>
-            <div class="field"><label>واٹس ایپ نمبر</label><input type="text" id="set-waNum" dir="ltr"></div>
+            <div class="field"><label>واٹس ایپ نمبر</label><input type="text" id="set-waNum" dir="ltr" placeholder="923001234567"><div class="hint">ملک کوڈ کے ساتھ لکھیں — مثلاً: 923001234567</div></div>
           </div>
           <div class="field"><label>فوٹر متن</label><input type="text" id="set-footerText"></div>
         </div>
@@ -535,9 +537,10 @@ body{font-family:var(--fi);background:var(--bg);color:var(--tp);min-height:100vh
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>💱 کرنسی ریٹ</h2></div>
+        <div class="card-header"><h2>💱 کرنسی ریٹ اور سونا</h2></div>
         <div class="card-body">
           <div class="form-grid">
+            <div class="field"><label>🥇 سونا 24K (فی تولہ)</label><input type="text" id="set-gold24k" placeholder="247800"></div>
             <div class="field"><label>امریکی ڈالر (USD)</label><input type="text" id="set-usd" placeholder="278.50"></div>
             <div class="field"><label>سعودی ریال (SAR)</label><input type="text" id="set-sar" placeholder="74.20"></div>
             <div class="field"><label>برطانوی پاؤنڈ (GBP)</label><input type="text" id="set-gbp" placeholder="352.00"></div>
@@ -1241,7 +1244,7 @@ async function deleteBreaking(id) {
 const settingKeys = [
   'siteName','chiefEditor','fbUrl','twUrl','ytUrl','waNum','footerText',
   'fajr','zuhr','asr','maghrib','isha','sehri',
-  'usd','sar','gbp','eur','aed','cad'
+  'gold24k','usd','sar','gbp','eur','aed','cad'
 ];
 
 async function loadSettings() {
