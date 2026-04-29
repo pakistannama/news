@@ -386,7 +386,7 @@ function renderFeatured(items) {
   return `
   <div class="sec-ttl"><span>⭐ نمایاں خبریں</span></div>
   <div class="feat-grid">
-    <div class="ncard" onclick="openNews('${main.slug}')">
+    <div class="ncard" onclick="openNews('${main.slug}', ${main.id})">
       <div class="ncard-img ncard-img-main">
         ${main.image ? `<img src="${main.image}" alt="${esc(main.title)}" loading="lazy">` : `<div style="font-size:60px;opacity:.15">📰</div>`}
       </div>
@@ -401,7 +401,7 @@ function renderFeatured(items) {
     </div>
     <div class="feat-side">
       ${side.map(n => `
-      <div class="ncard" onclick="openNews('${n.slug}')">
+      <div class="ncard" onclick="openNews('${n.slug}', ${n.id})">
         <div class="ncard-img ncard-img-side">
           ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:40px;opacity:.15">📰</div>`}
         </div>
@@ -420,7 +420,7 @@ function renderFeatured(items) {
 // =====================
 function renderListItem(n) {
   return `
-  <div class="nli" onclick="openNews('${n.slug}')">
+  <div class="nli" onclick="openNews('${n.slug}', ${n.id})">
     <div class="nli-img">
       ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:28px;opacity:.2">📰</div>`}
     </div>
@@ -437,7 +437,7 @@ function renderListItem(n) {
 // =====================
 function renderSmallCard(n) {
   return `
-  <div class="ncard" onclick="openNews('${n.slug}')">
+  <div class="ncard" onclick="openNews('${n.slug}', ${n.id})">
     <div class="ncard-img ncard-img-sm">
       ${n.image ? `<img src="${n.image}" alt="${esc(n.title)}" loading="lazy">` : `<div style="font-size:36px;opacity:.15">📰</div>`}
     </div>
@@ -544,7 +544,7 @@ function renderPopular() {
     <div class="sw-ttl">🔥 مقبول خبریں</div>
     <div class="sw-body">
       ${top.map((n,i) => `
-      <div class="pop-item" onclick="openNews('${n.slug}')">
+      <div class="pop-item" onclick="openNews('${n.slug}', ${n.id})">
         <div class="pop-n">${i+1}</div>
         <div class="pop-tx">${esc(n.title)}</div>
       </div>`).join('') || '<div style="font-family:\'Noto Sans Arabic\',sans-serif;font-size:12px;color:#aaa;text-align:center;padding:10px">ابھی کوئی خبر نہیں</div>'}
@@ -623,8 +623,12 @@ function renderSearchResults() {
 // =====================
 // ACTIONS
 // =====================
-function openNews(slug) {
-  window.location.href = 'article.html?slug=' + encodeURIComponent(slug);
+function openNews(slug, id) {
+  if(id) {
+    window.location.href = 'article.html?id=' + id;
+  } else {
+    window.location.href = 'article.html?slug=' + encodeURIComponent(slug);
+  }
 }
 
 function filterCat(id) {
