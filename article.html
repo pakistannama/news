@@ -198,16 +198,17 @@ async function init() {
   }
 
   const params = new URLSearchParams(location.search);
+  const id = params.get('id');
   const slug = params.get('slug');
 
-  if (!slug) {
-    showError('خبر نہیں ملی', 'URL میں slug موجود نہیں');
+  if (!id && !slug) {
+    showError('خبر نہیں ملی', 'URL میں کوئی معلومات نہیں');
     return;
   }
 
   try {
     const [article, allNews, cats, settings] = await Promise.all([
-      getNewsBySlug(slug),
+      id ? getNewsById(id) : getNewsBySlug(slug),
       getNews(50),
       getCategories(),
       getSettings()
