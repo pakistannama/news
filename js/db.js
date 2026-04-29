@@ -40,13 +40,38 @@ async function getNews(limit = 20, catId = null) {
 async function getNewsBySlug(slug) {
   const db = getDb();
   if (!db) return null;
-  const { data, error } = await db
+
+  // URL decode karo — Urdu slugs encode hote hain
+  let decoded;
+  try { decoded = decodeURIComponent(slug); } catch(e) { decoded = slug; }
+
+  // Pehle decoded slug se try karo
+  const { data } = await db
+    .from('news')
+    .select('*, categories(name, slug, color, icon), authors(name)')
+    .eq('slug', decoded)
+    .maybeSingle();
+  if (data) return data;
+
+  // Agar nahi mila to original slug se try karo
+  const { data: data2 } = await db
     .from('news')
     .select('*, categories(name, slug, color, icon), authors(name)')
     .eq('slug', slug)
-    .single();
-  if (error) console.error('getNewsBySlug error:', error);
-  return data;
+    .maybeSingle();
+  if (data2) return data2;
+
+  // Last try — id se dhundho agar slug number hai
+  if (!isNaN(slug)) {
+    const { data: data3 } = await db
+      .from('news')
+      .select('*, categories(name, slug, color, icon), authors(name)')
+      .eq('id', Number(slug))
+      .maybeSingle();
+    return data3;
+  }
+
+  return null;
 }
 
 // =====================
