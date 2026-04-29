@@ -577,9 +577,12 @@ function renderFooter(siteName, s) {
         </div>
       </div>
       <div>
-        <h4>رابطہ</h4>
+        <h4>رابطہ کریں</h4>
         <div class="ftr-links">
           <a>مدیرِ اعلیٰ: ${s.chiefEditor||''}</a>
+          <a href="mailto:pakistannama58@gmail.com" style="color:rgba(255,255,255,.7)">📧 pakistannama58@gmail.com</a>
+          <a>📍 E11، اسلام آباد، پاکستان</a>
+          ${s.waNum ? `<a href="https://wa.me/${(s.waNum||'').replace(/[^0-9]/g,'')}" target="_blank" style="color:#25d366">💬 واٹس ایپ پر رابطہ کریں</a>` : ''}
         </div>
       </div>
     </div>
