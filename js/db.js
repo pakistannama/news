@@ -170,3 +170,18 @@ function makeSlug(title) {
     .replace(/[^a-z0-9\u0600-\u06FF-]/g, '')
     .slice(0, 60) + '-' + Date.now();
 }
+
+// =====================
+// Single news by ID
+// =====================
+async function getNewsById(id) {
+  const db = getDb();
+  if (!db) return null;
+  const { data, error } = await db
+    .from('news')
+    .select('*, categories(name, slug, color, icon), authors(name)')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) console.error('getNewsById error:', error);
+  return data;
+}
