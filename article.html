@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
@@ -228,7 +229,7 @@ async function init() {
       .slice(0, 4);
 
     // Views increment
-    incrementViews(article.id);
+    try { incrementViews(article.id); } catch(e) {}
 
     // Update page meta
     updateMeta(article);
@@ -332,7 +333,7 @@ function renderArticle() {
       <div class="article-body">
         ${renderBody(a.body)}
       </div>
-      ${a.tags && a.tags.length ? `
+      ${a.tags && Array.isArray(a.tags) && a.tags.length ? `
       <div class="tags-wrap">
         <span class="tag-lbl">🏷️ ٹیگز:</span>
         ${a.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}
