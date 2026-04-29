@@ -205,7 +205,7 @@ let STATE = {
   categories: [],
   breaking: [],
   settings: {},
-  prayer: { fajr:'4:45 ص', zuhr:'12:22 م', asr:'4:10 م', maghrib:'7:28 م', isha:'8:58 م', city:'بہاولنگر' },
+  prayer: { fajr:'4:45 ص', zuhr:'12:22 م', asr:'4:10 م', maghrib:'7:28 م', isha:'8:58 م', city:'لاہور' },
   rates: { gold24k:0, usd:0, eur:0, sar:0, aed:0, gbp:0, cad:0 },
   catFilter: null,
   srchOpen: false,
@@ -484,7 +484,7 @@ function renderPrayer() {
   <div class="prayer-w">
     <div class="prayer-hdr">
       <h4>🕌 اوقاتِ نماز</h4>
-      <span class="prayer-city">${p.city||'بہاولنگر'}</span>
+      <span class="prayer-city">${p.city||'لاہور'}</span>
     </div>
     <div class="prayer-grid">
       ${prayers.map(pr => `
