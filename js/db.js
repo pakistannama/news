@@ -142,7 +142,9 @@ async function getSettings() {
 async function incrementViews(id) {
   const db = getDb();
   if (!db) return;
-  await db.rpc('increment_views', { news_id: id });
+  try {
+    await db.from('news').update({ views: db.raw('views + 1') }).eq('id', id);
+  } catch(e) {}
 }
 
 // =====================
