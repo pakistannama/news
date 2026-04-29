@@ -919,25 +919,29 @@ async function openNewsModal(news = null) {
   document.getElementById('newsBreaking').checked = false;
   document.getElementById('newsModalTitle').textContent = 'نئی خبر شامل کریں';
 
-  if (news) {
-    document.getElementById('newsModalTitle').textContent = 'خبر میں ترمیم';
-    document.getElementById('newsId').value = news.id;
-    document.getElementById('newsTitle').value = news.title || '';
-    document.getElementById('newsBody').value = news.body || '';
-    document.getElementById('newsCat').value = news.cat_id || '';
-    document.getElementById('newsAuthor').value = news.author_id || '';
-    document.getElementById('newsImage').value = news.image || '';
-    document.getElementById('newsTags').value = (news.tags || []).join(', ');
-    document.getElementById('newsMetaTitle').value = news.meta_title || '';
-    document.getElementById('newsMetaDesc').value = news.meta_desc || '';
-    document.getElementById('newsFeatured').checked = news.featured || false;
-    if (news.image) {
-      const img = document.getElementById('imgPreview');
-      img.src = news.image;
-      img.style.display = 'block';
-    }
-  }
   openModal('newsModal');
+
+  if (news) {
+    // setTimeout: options render hone ke baad values set karo
+    setTimeout(() => {
+      document.getElementById('newsModalTitle').textContent = 'خبر میں ترمیم';
+      document.getElementById('newsId').value = news.id;
+      document.getElementById('newsTitle').value = news.title || '';
+      document.getElementById('newsBody').value = news.body || '';
+      document.getElementById('newsCat').value = news.cat_id || '';
+      document.getElementById('newsAuthor').value = news.author_id || '';
+      document.getElementById('newsImage').value = news.image || '';
+      document.getElementById('newsTags').value = (news.tags || []).join(', ');
+      document.getElementById('newsMetaTitle').value = news.meta_title || '';
+      document.getElementById('newsMetaDesc').value = news.meta_desc || '';
+      document.getElementById('newsFeatured').checked = news.featured || false;
+      if (news.image) {
+        const img = document.getElementById('imgPreview');
+        img.src = news.image;
+        img.style.display = 'block';
+      }
+    }, 100);
+  }
 }
 
 async function editNews(id) {
