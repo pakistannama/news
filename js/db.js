@@ -11,10 +11,10 @@ function initSupabase() {
   );
 }
 
-let _db = null;
+window._db = null;
 function getDb() {
-  if (!_db) _db = initSupabase();
-  return _db;
+  if (!window._db) window._db = initSupabase();
+  return window._db;
 }
 
 // =====================
