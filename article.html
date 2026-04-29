@@ -1,1 +1,569 @@
 
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<title>پاکستان نامہ</title>
+<meta name="description" content="پاکستان نامہ — تازہ ترین خبریں">
+<!-- OG tags — JavaScript se update honge -->
+<meta property="og:site_name" content="پاکستان نامہ">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ur_PK">
+<meta property="og:title" content="پاکستان نامہ">
+<meta property="og:description" content="پاکستان نامہ — تازہ ترین خبریں">
+<meta property="og:image" content="">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="پاکستان نامہ">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gd:#0a4a1a;--gm:#1a7a2a;--gl:#2db844;--gp:#e8f5e9;
+  --gold:#c9a84c;--goldl:#f5d78e;
+  --tp:#1a1a1a;--ts:#4a4a4a;--tm:#888;
+  --bg:#f2f4f2;--card:#fff;--bdr:#e0e0e0;
+  --sh:0 2px 12px rgba(0,0,0,0.08);--sh2:0 6px 24px rgba(0,0,0,0.14);
+  --fu:'Noto Nastaliq Urdu',serif;
+  --fi:'Noto Sans Arabic',sans-serif;
+  --r:8px;--rl:14px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fu);direction:rtl;background:var(--bg);color:var(--tp);font-size:16px;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* HEADER */
+.hdr{background:linear-gradient(160deg,#041a08 0%,var(--gd) 50%,#0c3a16 100%);color:#fff}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;cursor:pointer}
+.logo-name{font-size:34px;font-weight:700;color:#fff;line-height:1.1;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+.logo-line{width:80px;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:2px auto}
+.logo-editor{font-size:12px;color:var(--goldl);margin-top:2px}
+.hdr-btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:var(--r);font-size:13px;font-family:var(--fi);cursor:pointer;transition:.2s}
+.hdr-btn:hover{background:rgba(255,255,255,.22)}
+.date-bar{background:rgba(0,0,0,.3);padding:5px 22px;font-size:12px;color:rgba(255,255,255,.75);font-family:var(--fi);border-top:1px solid rgba(255,255,255,.08)}
+
+/* NAV */
+.nav{background:var(--gm);position:sticky;top:0;z-index:200;box-shadow:0 3px 12px rgba(0,0,0,.25)}
+.nav-inner{display:flex;align-items:center;max-width:1240px;margin:0 auto;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-link{display:block;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;font-family:var(--fu);white-space:nowrap;cursor:pointer;border-bottom:3px solid transparent;transition:.2s}
+.nav-link:hover{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.1)}
+
+/* LAYOUT */
+.wrap{max-width:1240px;margin:0 auto;padding:24px 16px}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:28px}
+
+/* BREADCRUMB */
+.breadcrumb{font-family:var(--fi);font-size:12px;color:var(--tm);margin-bottom:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.breadcrumb a{color:var(--gm);cursor:pointer}
+.breadcrumb a:hover{text-decoration:underline}
+
+/* ARTICLE */
+.article-card{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+
+.article-hero{width:100%;max-height:480px;overflow:hidden;background:#eee;display:flex;align-items:center;justify-content:center}
+.article-hero img{width:100%;height:480px;object-fit:cover;display:block}
+.article-hero .no-img{font-size:80px;opacity:.1;padding:60px}
+
+.article-content{padding:28px 32px}
+
+.cat-badge{display:inline-block;color:#fff;font-size:12px;padding:4px 12px;border-radius:20px;margin-bottom:12px;font-family:var(--fi);font-weight:600}
+
+.article-title{font-family:var(--fu);font-size:26px;font-weight:700;line-height:1.8;color:var(--tp);margin-bottom:16px}
+
+.article-meta{display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);margin-bottom:24px;flex-wrap:wrap}
+.meta-item{display:flex;align-items:center;gap:6px;font-family:var(--fi);font-size:13px;color:var(--ts)}
+.meta-item .icon{font-size:16px}
+
+.article-body{font-family:var(--fu);font-size:17px;line-height:2.2;color:var(--tp)}
+.article-body p{margin-bottom:16px}
+
+/* TAGS */
+.tags-wrap{margin-top:24px;padding-top:16px;border-top:1px solid var(--bdr);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag-lbl{font-family:var(--fi);font-size:13px;color:var(--tm)}
+.tag{display:inline-block;padding:4px 12px;background:var(--gp);color:var(--gm);border-radius:20px;font-size:12px;font-family:var(--fi)}
+
+/* SHARE BAR */
+.share-bar{margin-top:24px;padding:20px;background:linear-gradient(135deg,#f8fff8,var(--gp));border-radius:var(--rl);border:1px solid #c8e6c9}
+.share-bar h4{font-family:var(--fu);font-size:15px;color:var(--gd);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.share-btns{display:flex;gap:10px;flex-wrap:wrap}
+.share-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--r);border:none;color:#fff;font-family:var(--fi);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.share-btn:hover{transform:translateY(-2px);opacity:.9}
+.share-btn.whatsapp{background:#25d366}
+.share-btn.facebook{background:#1877f2}
+.share-btn.twitter{background:#1da1f2}
+.share-btn.copy{background:var(--gm)}
+.share-btn.copy.copied{background:#388e3c}
+
+/* RELATED */
+.related-section{margin-top:28px}
+.sec-ttl{font-size:18px;font-weight:700;color:var(--gd);border-right:4px solid var(--gl);padding-right:12px;margin-bottom:16px}
+.related-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rcard{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:.2s}
+.rcard:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.rcard-img{height:130px;overflow:hidden;background:#eee;display:flex;align-items:center;justify-content:center}
+.rcard-img img{width:100%;height:100%;object-fit:cover}
+.rcard-body{padding:12px}
+.rcard-cat{font-size:10px;font-family:var(--fi);color:#fff;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.rcard-title{font-family:var(--fu);font-size:13px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rcard-date{font-size:11px;color:var(--tm);font-family:var(--fi);margin-top:6px}
+
+/* SIDEBAR */
+.sb{display:flex;flex-direction:column;gap:18px}
+.sw{background:var(--card);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+.sw-ttl{background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;padding:11px 15px;font-size:14px;font-family:var(--fu);font-weight:600;display:flex;align-items:center;gap:6px}
+.sw-body{padding:13px}
+.pop-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;align-items:flex-start;transition:.15s}
+.pop-item:last-child{border:none}
+.pop-item:hover{background:#fafff9;padding-right:4px}
+.pop-n{background:var(--gl);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--fi);flex-shrink:0;font-weight:700;margin-top:2px}
+.pop-tx{font-family:var(--fu);font-size:13px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* CAT PILLS */
+.cat-pills{display:flex;flex-wrap:wrap;gap:8px;padding:13px}
+.cat-pill{padding:7px 14px;border-radius:20px;color:#fff;font-size:13px;font-family:var(--fu);cursor:pointer;transition:.2s;border:none}
+.cat-pill:hover{opacity:.85;transform:translateY(-1px)}
+
+/* FOOTER */
+.ftr{background:linear-gradient(160deg,#041a08,var(--gd));color:#fff;padding:36px 22px 20px;margin-top:40px}
+.ftr-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px;max-width:1240px;margin:0 auto}
+.ftr h4{font-family:var(--fu);font-size:16px;color:var(--goldl);margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px}
+.ftr p,.ftr a{font-size:13px;color:rgba(255,255,255,.7);line-height:2;font-family:var(--fu)}
+.ftr a:hover{color:var(--goldl)}
+.ftr-links{display:flex;flex-direction:column;gap:4px}
+.social-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.soc-btn{padding:7px 14px;border-radius:20px;border:none;color:#fff;font-size:12px;font-family:var(--fi);cursor:pointer;font-weight:600}
+.ftr-bottom{text-align:center;padding-top:20px;margin-top:20px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(255,255,255,.5);font-family:var(--fi);max-width:1240px;margin:20px auto 0}
+
+/* LOADING / ERROR */
+.loading{text-align:center;padding:60px 20px;font-family:var(--fi);color:var(--tm)}
+.spinner{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--gm);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{text-align:center;padding:60px 20px;background:var(--card);border-radius:var(--rl);box-shadow:var(--sh)}
+.error-box .icon{font-size:60px;margin-bottom:16px}
+.error-box h2{font-family:var(--fu);font-size:22px;color:var(--gd);margin-bottom:8px}
+.error-box p{font-family:var(--fi);color:var(--tm);margin-bottom:20px}
+.back-btn{display:inline-block;padding:10px 24px;background:var(--gm);color:#fff;border-radius:var(--r);font-family:var(--fi);font-size:14px;cursor:pointer;border:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:10px 22px;border-radius:22px;font-family:var(--fi);font-size:13px;opacity:0;transition:.3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .ftr-grid{grid-template-columns:1fr 1fr}
+  .article-content{padding:20px 18px}
+  .article-title{font-size:21px}
+}
+@media(max-width:640px){
+  .related-grid{grid-template-columns:1fr}
+  .article-hero img{height:240px}
+  .logo-name{font-size:26px}
+  .ftr-grid{grid-template-columns:1fr}
+  .share-btns{gap:8px}
+  .share-btn{padding:9px 14px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading"><div class="spinner"></div>خبر لوڈ ہو رہی ہے...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/db.js"></script>
+<script>
+let STATE = {
+  article: null,
+  related: [],
+  popular: [],
+  categories: [],
+  settings: {}
+};
+
+// =====================
+// INIT
+// =====================
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('slug');
+
+  if (!slug) {
+    showError('خبر نہیں ملی', 'URL میں slug موجود نہیں');
+    return;
+  }
+
+  try {
+    const [article, allNews, cats, settings] = await Promise.all([
+      getNewsBySlug(slug),
+      getNews(50),
+      getCategories(),
+      getSettings()
+    ]);
+
+    if (!article) {
+      showError('خبر نہیں ملی', 'یہ خبر حذف ہو چکی ہے یا موجود نہیں');
+      return;
+    }
+
+    STATE.article = article;
+    STATE.categories = cats;
+    STATE.settings = settings;
+    STATE.popular = [...allNews].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,6);
+    STATE.related = allNews
+      .filter(n => n.cat_id === article.cat_id && n.id !== article.id)
+      .slice(0, 4);
+
+    // Views increment
+    incrementViews(article.id);
+
+    // Update page meta
+    updateMeta(article);
+
+    // Render
+    render();
+
+  } catch(e) {
+    console.error(e);
+    showError('خرابی', 'خبر لوڈ نہیں ہو سکی — دوبارہ کوشش کریں');
+  }
+}
+
+// =====================
+// UPDATE META TAGS
+// =====================
+function updateMeta(a) {
+  const title = a.meta_title || a.title;
+  const desc = a.meta_desc || (a.body||'').slice(0, 160);
+  const img = a.image || '';
+  const url = location.href;
+
+  document.title = title + ' — پاکستان نامہ';
+  setMeta('description', desc);
+  setOG('title', title);
+  setOG('description', desc);
+  setOG('image', img);
+  setOG('url', url);
+  setMeta('twitter:title', title);
+  setMeta('twitter:description', desc);
+  setMeta('twitter:image', img);
+}
+
+function setMeta(name, val) {
+  let el = document.querySelector(`meta[name="${name}"]`);
+  if (!el) { el = document.createElement('meta'); el.name = name; document.head.appendChild(el); }
+  el.content = val;
+}
+function setOG(prop, val) {
+  let el = document.querySelector(`meta[property="og:${prop}"]`);
+  if (!el) { el = document.createElement('meta'); el.setAttribute('property', 'og:' + prop); document.head.appendChild(el); }
+  el.content = val;
+}
+
+// =====================
+// RENDER
+// =====================
+function render() {
+  const s = STATE.settings;
+  const siteName = s.siteName || 'پاکستان نامہ';
+  document.getElementById('app').innerHTML = `
+    ${renderHeader(siteName, s)}
+    ${renderNav()}
+    <div class="wrap">
+      <div class="breadcrumb">
+        <a onclick="goHome()">🏠 ہوم</a>
+        <span>›</span>
+        ${STATE.article.categories ? `<a onclick="goHome()">${STATE.article.categories.icon||''} ${STATE.article.categories.name}</a><span>›</span>` : ''}
+        <span style="color:var(--ts)">${esc(STATE.article.title).slice(0,50)}...</span>
+      </div>
+      <div class="grid">
+        <div>
+          ${renderArticle()}
+          ${renderRelated()}
+        </div>
+        <div class="sb">
+          ${renderPopular()}
+          ${renderCategories()}
+        </div>
+      </div>
+    </div>
+    ${renderFooter(siteName, s)}
+  `;
+}
+
+// =====================
+// ARTICLE
+// =====================
+function renderArticle() {
+  const a = STATE.article;
+  const cat = a.categories;
+  const url = encodeURIComponent(location.href);
+  const title = encodeURIComponent(a.title);
+  const waText = encodeURIComponent('📰 ' + a.title + '\n' + location.href);
+
+  return `
+  <div class="article-card">
+    <div class="article-hero">
+      ${a.image
+        ? `<img src="${esc(a.image)}" alt="${esc(a.title)}">`
+        : `<div class="no-img">📰</div>`}
+    </div>
+    <div class="article-content">
+      ${cat ? `<span class="cat-badge" style="background:${cat.color||'#2db844'}">${cat.icon||''} ${cat.name}</span>` : ''}
+      <h1 class="article-title">${esc(a.title)}</h1>
+      <div class="article-meta">
+        ${a.authors ? `<div class="meta-item"><span class="icon">✍️</span>${esc(a.authors.name)}</div>` : ''}
+        <div class="meta-item"><span class="icon">📅</span>${formatDateUrdu(a.published_at)}</div>
+        <div class="meta-item"><span class="icon">👁️</span>${(a.views||0).toLocaleString()} مرتبہ پڑھی گئی</div>
+      </div>
+      <div class="article-body">
+        ${renderBody(a.body)}
+      </div>
+      ${a.tags && a.tags.length ? `
+      <div class="tags-wrap">
+        <span class="tag-lbl">🏷️ ٹیگز:</span>
+        ${a.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+      </div>` : ''}
+
+      <!-- SHARE BAR -->
+      <div class="share-bar">
+        <h4>📤 یہ خبر شیئر کریں</h4>
+        <div class="share-btns">
+          <button class="share-btn whatsapp" onclick="shareWhatsApp('${waText}')">
+            💬 واٹس ایپ
+          </button>
+          <button class="share-btn facebook" onclick="shareFacebook('${url}')">
+            👍 فیس بک
+          </button>
+          <button class="share-btn twitter" onclick="shareTwitter('${url}','${title}')">
+            🐦 ٹویٹر
+          </button>
+          <button class="share-btn copy" id="copyBtn" onclick="copyLink()">
+            🔗 لنک کاپی کریں
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderBody(body) {
+  if (!body) return '<p style="color:var(--tm)">متن دستیاب نہیں</p>';
+  // Paragraphs banao — double newline se split
+  return body.split(/\n\n+/).map(p => p.trim() ? `<p>${p.replace(/\n/g,'<br>')}</p>` : '').join('');
+}
+
+// =====================
+// RELATED NEWS
+// =====================
+function renderRelated() {
+  if (!STATE.related.length) return '';
+  return `
+  <div class="related-section">
+    <div class="sec-ttl">📰 متعلقہ خبریں</div>
+    <div class="related-grid">
+      ${STATE.related.map(n => `
+      <div class="rcard" onclick="openNews('${n.slug}')">
+        <div class="rcard-img">
+          ${n.image ? `<img src="${esc(n.image)}" alt="${esc(n.title)}" loading="lazy">` : '<div style="font-size:36px;opacity:.15;padding:20px">📰</div>'}
+        </div>
+        <div class="rcard-body">
+          ${n.categories ? `<span class="rcard-cat" style="background:${n.categories.color||'#2db844'}">${n.categories.name}</span>` : ''}
+          <div class="rcard-title">${esc(n.title)}</div>
+          <div class="rcard-date">${formatDateUrdu(n.published_at)}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// =====================
+// SIDEBAR
+// =====================
+function renderPopular() {
+  return `
+  <div class="sw">
+    <div class="sw-ttl">🔥 مقبول خبریں</div>
+    <div class="sw-body">
+      ${STATE.popular.map((n,i) => `
+      <div class="pop-item" onclick="openNews('${n.slug}')">
+        <div class="pop-n">${i+1}</div>
+        <div class="pop-tx">${esc(n.title)}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderCategories() {
+  return `
+  <div class="sw">
+    <div class="sw-ttl">🗂️ زمرے</div>
+    <div class="cat-pills">
+      ${STATE.categories.map(c => `
+      <button class="cat-pill" style="background:${c.color||'#2db844'}" onclick="goHome('${c.slug}')">
+        ${c.icon||''} ${c.name}
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+
+// =====================
+// HEADER & NAV & FOOTER
+// =====================
+function renderHeader(siteName, s) {
+  const today = new Date().toLocaleDateString('ur-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return `
+  <div class="hdr">
+    <div class="hdr-top">
+      <div style="min-width:80px"></div>
+      <div class="logo-wrap" onclick="goHome()">
+        <div class="logo-name">${siteName}</div>
+        <div class="logo-line"></div>
+        <div class="logo-editor">مدیرِ اعلیٰ: ${s.chiefEditor||''}</div>
+      </div>
+      <div>
+        <button class="hdr-btn" onclick="goHome()">🏠 ہوم</button>
+      </div>
+    </div>
+    <div class="date-bar">${today}</div>
+  </div>`;
+}
+
+function renderNav() {
+  return `
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" onclick="goHome()">🏠 ہوم</a>
+      ${STATE.categories.map(c => `<a class="nav-link" onclick="goHome()">${c.icon||''} ${c.name}</a>`).join('')}
+    </div>
+  </nav>`;
+}
+
+function renderFooter(siteName, s) {
+  return `
+  <footer class="ftr">
+    <div class="ftr-grid">
+      <div>
+        <h4>${siteName}</h4>
+        <p>پاکستان اور دنیا کی تازہ ترین خبروں کا قابل اعتماد ذریعہ</p>
+        <div class="social-row">
+          ${s.fbUrl ? `<button class="soc-btn" style="background:#1877f2" onclick="window.open('${s.fbUrl}')">Facebook</button>` : ''}
+          ${s.waNum ? `<button class="soc-btn" style="background:#25d366" onclick="window.open('https://wa.me/${(s.waNum||'').replace(/[^0-9]/g,'')}')">WhatsApp</button>` : ''}
+          ${s.twUrl ? `<button class="soc-btn" style="background:#1da1f2" onclick="window.open('${s.twUrl}')">Twitter</button>` : ''}
+        </div>
+      </div>
+      <div>
+        <h4>اہم صفحات</h4>
+        <div class="ftr-links">
+          <a onclick="goHome()">ہوم پیج</a>
+          ${STATE.categories.slice(0,5).map(c=>`<a onclick="goHome()">${c.name}</a>`).join('')}
+        </div>
+      </div>
+      <div>
+        <h4>رابطہ کریں</h4>
+        <div class="ftr-links">
+          <a>مدیرِ اعلیٰ: ${s.chiefEditor||''}</a>
+          <a href="mailto:pakistannama58@gmail.com">📧 pakistannama58@gmail.com</a>
+          <a>📍 E11، اسلام آباد، پاکستان</a>
+          ${s.waNum ? `<a href="https://wa.me/${(s.waNum||'').replace(/[^0-9]/g,'')}" target="_blank" style="color:#25d366">💬 واٹس ایپ پر رابطہ</a>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="ftr-bottom">${s.footerText||'© 2025 پاکستان نامہ۔ تمام حقوق محفوظ ہیں۔'}</div>
+  </footer>`;
+}
+
+// =====================
+// SHARE FUNCTIONS
+// =====================
+function shareWhatsApp(text) {
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+function shareFacebook(url) {
+  window.open('https://www.facebook.com/sharer/sharer.php?u=' + url, '_blank', 'width=600,height=400');
+}
+function shareTwitter(url, title) {
+  window.open('https://twitter.com/intent/tweet?url=' + url + '&text=' + title, '_blank', 'width=600,height=400');
+}
+function copyLink() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    const btn = document.getElementById('copyBtn');
+    if(btn) { btn.textContent = '✅ کاپی ہو گیا!'; btn.classList.add('copied'); }
+    showToast('🔗 لنک کاپی ہو گیا!');
+    setTimeout(() => {
+      if(btn) { btn.textContent = '🔗 لنک کاپی کریں'; btn.classList.remove('copied'); }
+    }, 2500);
+  }).catch(() => {
+    // Fallback
+    const el = document.createElement('textarea');
+    el.value = location.href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('🔗 لنک کاپی ہو گیا!');
+  });
+}
+
+// =====================
+// HELPERS
+// =====================
+function goHome() {
+  window.location.href = 'index.html';
+}
+function openNews(slug) {
+  window.location.href = 'article.html?slug=' + encodeURIComponent(slug);
+}
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+function showError(title, msg) {
+  document.getElementById('app').innerHTML = `
+    <div style="max-width:600px;margin:60px auto;padding:20px">
+      <div class="error-box">
+        <div class="icon">📰</div>
+        <h2>${title}</h2>
+        <p>${msg}</p>
+        <button class="back-btn" onclick="goHome()">🏠 ہوم پیج پر جائیں</button>
+      </div>
+    </div>`;
+}
+
+// =====================
+// START
+// =====================
+window.addEventListener('load', function() {
+  let attempts = 0;
+  const maxAttempts = 20;
+  function tryInit() {
+    attempts++;
+    if (typeof getNews !== 'undefined' && typeof getDb !== 'undefined' && getDb() !== null) {
+      init();
+    } else if (attempts < maxAttempts) {
+      setTimeout(tryInit, 250);
+    } else {
+      document.getElementById('app').innerHTML = `
+        <div class="loading">
+          <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+          <div>Connection error — please refresh karein</div>
+          <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#1a7a2a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">🔄 Refresh</button>
+        </div>`;
+    }
+  }
+  setTimeout(tryInit, 500);
+});
+</script>
+</body>
+</html>
